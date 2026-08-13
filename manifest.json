@@ -2,14 +2,14 @@
   "name": "Controle Financeiro",
   "short_name": "Financeiro",
   "description": "Controle financeiro com sync automático",
-  "start_url": "./controle-financeiro.html",
+  "start_url": "./",
   "display": "standalone",
   "background_color": "#2b4668",
   "theme_color": "#2b4668",
   "orientation": "portrait",
   "scope": "./",
   "lang": "pt-BR",
-  "id": "/controle-financeiro/",
+  "id": "/controle_financeiro/",
   "launch_handler": {
     "client_mode": [
       "navigate-existing"
@@ -37,5 +37,6 @@
       "type": "image/png",
       "purpose": "maskable"
     }
-  ]
+  ],
+  "version": "9.1"
 }
