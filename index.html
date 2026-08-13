@@ -435,7 +435,11 @@
         <button onclick="verificarNotificacoes(true)" style="background:#64748b;color:white;padding:6px 10px;border-radius:7px;font-weight:bold;font-size:12px">🔄 Verificar agora</button>
         <button onclick="filtrarStatusRapido('pendente');fecharPainelNotificacoes()" style="background:#f59e0b;color:white;padding:6px 10px;border-radius:7px;font-weight:bold;font-size:12px">👁️ Ver pendentes</button>
       </div>
-      <small style="display:block;margin-top:6px;color:#64748b;line-height:1.3">Receba alertas de contas a vencer. No celular, mantenha o app aberto e permita notificações.</small>
+      <div id="avisoTrigger" style="display:none;padding:8px 10px;margin-top:8px;border-radius:8px;background:#fef3c7;border:1px solid #fde68a;color:#92400e;font-size:11px;line-height:1.3">
+        ⚠️ <b>Seu navegador não suporta aviso com app fechado.</b> No Chrome no PC, instale o PWA e deixe o Chrome rodando em segundo plano (Configurações > Sistema > Continuar executando apps em segundo plano). No modo atual o aviso funciona com o app aberto/minimizado.
+      </div>
+      <small id="txtAgendamentoFechado" style="display:block;margin-top:8px;color:#16a34a;font-weight:bold;font-size:11px;line-height:1.3"></small>
+      <small style="display:block;margin-top:6px;color:#64748b;line-height:1.3">💡 Dica PC: Instale o app (botão 📲) e no Chrome vá em <b>Configurações > Sistema > Continuar executando aplicativos em segundo plano quando o Google Chrome for fechado</b> = ATIVADO. Assim notifica mesmo fechado.</small>
     </div>
   </div>
 
@@ -554,6 +558,88 @@
         }catch(e){ console.warn(e); }
       }, 60000);
     }
+    function agendarNotificacaoParaAppFechado(){
+      try{
+        if(!("serviceWorker" in navigator)) return;
+        if(!navigator.serviceWorker.controller){
+          console.warn("[PWA] SW controller não pronto para agendar fechado");
+          return;
+        }
+        // Verifica se Trigger API é suportada
+        if(!('showTrigger' in Notification.prototype)){
+          console.log("[PWA] Trigger API não suportada, usando modo com app aberto");
+          const aviso = document.getElementById("avisoTrigger");
+          if(aviso) aviso.style.display="block";
+          return;
+        }
+        const aviso = document.getElementById("avisoTrigger");
+        if(aviso) aviso.style.display="none";
+        
+        const [h,m] = (configNotificacao.horarioNotificacao||"08:00").split(":").map(Number);
+        const agora = new Date();
+        let proxima = new Date();
+        proxima.setHours(h,m,0,0);
+        proxima.setSeconds(0);
+        proxima.setMilliseconds(0);
+        if(proxima <= agora){
+          proxima.setDate(proxima.getDate()+1);
+        }
+        // Calcula vencimentos que existirão nessa data futura
+        const dataAlvo = new Date(proxima);
+        dataAlvo.setHours(0,0,0,0);
+        const hojeMeiaNoite = obterHojeMeiaNoite();
+        const diffBase = Math.floor((dataAlvo - hojeMeiaNoite)/86400000);
+        
+        // Filtra o que estará vencido ou vencendo na data agendada
+        const futuros = dados.filter(item => item.tipo==="saida" && !item.pago && item.data).map(item=>{
+          const diffAtual = diffDias(item.data);
+          const diffNoDia = diffAtual - diffBase + (diffBase>0?0:0); // diff no dia alvo
+          // Na data alvo, item terá diff = diffDias - dias até lá
+          const diffFutura = diffDias(item.data) - diffBase;
+          // Mas diffDias já calcula hoje, então para data futura subtrai
+          return { item, diffFutura, diffAtual };
+        }).filter(x=>{
+          // Na data futura, considerar vencida (<0), hoje (0) ou próxima (1..dias)
+          return x.diffFutura <= configNotificacao.diasAntecedencia;
+        });
+        
+        const vencimentosHoje = obterVencimentosProximos();
+        let titulo = "Controle Financeiro - Lembrete";
+        let corpo;
+        if(futuros.length>0){
+          const total = futuros.reduce((s, f)=> s+Number(f.item.valor||0), 0);
+          const vencidasFut = futuros.filter(f=>f.diffFutura<0).length;
+          const hojeFut = futuros.filter(f=>f.diffFutura===0).length;
+          corpo = "";
+          if(vencidasFut>0) corpo += vencidasFut+" vencida"+(vencidasFut>1?"s":"")+"! ";
+          if(hojeFut>0) corpo += hojeFut+" vence nesse dia! ";
+          const prox = futuros.length - vencidasFut - hojeFut;
+          if(prox>0) corpo += prox+" próxima"+(prox>1?"s":"")+". ";
+          corpo += "Total "+formatarMoeda(total)+" - clique para abrir.";
+        }else{
+          // Mesmo sem contas, agenda um lembrete genérico
+          corpo = "💰 Bom dia! Abra o app para verificar suas contas de hoje.";
+        }
+        
+        navigator.serviceWorker.controller.postMessage({
+          type: "SCHEDULE_DAILY_NOTIFICATION",
+          timestamp: proxima.getTime(),
+          title: titulo,
+          body: corpo
+        });
+        console.log("[PWA] Agendamento para app fechado:", proxima.toLocaleString("pt-BR"));
+        
+        // Atualiza texto UI com próximo agendamento fechado
+        const txt = document.getElementById("txtAgendamentoFechado");
+        if(txt){
+          const suportado = 'showTrigger' in Notification.prototype;
+          txt.innerHTML = suportado ? "✅ Agendado para <b>"+proxima.toLocaleString("pt-BR")+"</b> mesmo com app fechado" : "⚠️ Seu navegador não suporta aviso com app fechado. Deixe o PWA aberto em segundo plano.";
+        }
+      }catch(e){
+        console.error("[PWA] Erro agendar fechado", e);
+      }
+    }
+
     function obterProximoHorarioNotificacaoTexto(){
       const agora = new Date();
       const [h,m] = (configNotificacao.horarioNotificacao||"08:00").split(":").map(Number);
@@ -757,6 +843,9 @@
             salvarConfigNotificacao();
           }
         }
+
+        // Tenta agendar notificação que funciona mesmo com app fechado (Trigger API)
+        try{ agendarNotificacaoParaAppFechado(); }catch(e){}
 
       }catch(e){
         console.error("Erro verificarNotificacoes", e);
@@ -2340,5 +2429,5 @@
 
     document.getElementById("loginUsuario").focus();
   </script>
-</body>
+<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a2a910e28f2d2570',t:'MTc4NjYzODIyMw=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
