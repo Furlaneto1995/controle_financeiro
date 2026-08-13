@@ -1,0 +1,2344 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="manifest" href="./manifest.json">
+  <meta name="theme-color" content="#2b4668">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Financeiro">
+  <link rel="apple-touch-icon" href="./icon-180.png">
+  <link rel="icon" type="image/png" sizes="192x192" href="./icon-192.png">
+  <link rel="icon" type="image/png" sizes="512x512" href="./icon-512.png">
+  <title>Controle Financeiro</title>
+  <style>
+    *{box-sizing:border-box;}
+    body{font-family:'Segoe UI',sans-serif;margin:0;background:#f1f5f9;color:#1e293b;padding:0 20px 20px 20px;height:100vh;overflow:hidden;display:flex;}
+    .container{position:relative;max-width:1200px;margin:auto;background:white;padding:20px;border-radius:20px;box-shadow:0 15px 40px rgba(0,0,0,0.08);display:flex;flex-direction:column;height:100vh;width:100%;}
+    h2{text-align:center;margin-top:0;margin-bottom:6px;}
+    .login-screen{position:fixed;inset:0;z-index:9999;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#dbeafe,#f8fafc);padding:20px;}
+    .login-card{width:100%;max-width:360px;background:white;padding:24px;border-radius:22px;box-shadow:0 20px 50px rgba(15,23,42,0.16);text-align:center;}
+    .login-card h2{margin:0 0 6px;}
+    .login-card p{margin:0 0 16px;color:#64748b;font-size:13px;font-weight:bold;}
+    .login-card input,.login-card button{width:100%;height:42px;margin-bottom:8px;font-size:14px;}
+    .login-card button{background:#2563eb;color:white;font-weight:bold;}
+    .login-card small{display:block;margin-top:8px;color:#64748b;line-height:1.35;}
+    .usuario-app{display:flex;justify-content:center;align-items:center;gap:8px;margin-bottom:8px;font-size:12px;color:#475569;font-weight:bold;}
+    .btn-trocar-senha{background:#7c3aed;color:white;font-weight:bold;padding:5px 10px;font-size:12px;}
+    .btn-sair-app{background:#dc2626;color:white;font-weight:bold;padding:5px 10px;font-size:12px;}
+    .menu-wrapper{position:absolute;top:14px;right:16px;z-index:3000;}
+    .mobile-add-toggle{display:none;}
+    .menu-toggle{width:40px;height:40px;padding:0;border-radius:12px;background:#0f172a;color:white;font-size:22px;font-weight:bold;box-shadow:0 8px 22px rgba(15,23,42,.18);}
+    .menu-dropdown{display:none;position:absolute;top:48px;right:0;width:230px;max-height:calc(100vh - 90px);overflow-y:auto;padding:8px;border-radius:14px;background:white;border:1px solid #e2e8f0;box-shadow:0 18px 45px rgba(15,23,42,.18);}
+    .menu-dropdown.ativo{display:block;}
+    .menu-dropdown button{width:100%;display:block;text-align:left;padding:10px 12px;margin:2px 0;border-radius:10px;background:white;color:#0f172a;font-weight:bold;border:none;}
+    .menu-dropdown button:hover{transform:none;background:#f1f5f9;}
+    .menu-dropdown button.perigo{color:#dc2626;}
+    .menu-separador{height:1px;background:#e2e8f0;margin:6px 4px;}
+    .modo{padding:6px 12px;border-radius:8px;font-weight:bold;display:none;width:fit-content;margin-bottom:10px;color:white;font-size:13px;}
+    .modo.edicao{background:#f59e0b;}
+    .modo.copia{background:#6366f1;}
+    .modo.clonagem{background:#0891b2;}
+    .topo-fixo{background:white;z-index:1000;padding-bottom:10px;}
+    .linha-topo{display:flex;flex-wrap:nowrap;align-items:center;gap:6px;margin-bottom:10px;overflow-x:auto;overflow-y:hidden;padding-bottom:2px;}
+    .linha-topo > *{flex:0 0 auto;}
+    input,select,button{padding:8px;border-radius:8px;border:1px solid #e2e8f0;font-size:13px;background:#f8fafc;}
+    input:focus,select:focus{outline:none;border:1px solid #3b82f6;background:white;}
+    .linha-topo input,.linha-topo select,.linha-topo button{height:36px;}
+    #data{width:125px;}
+    #descricao{width:160px;min-width:160px;flex:0 0 160px;}
+    #valor{width:72px;min-width:72px;flex:0 0 72px;-moz-appearance:textfield;} #valor::-webkit-outer-spin-button,#valor::-webkit-inner-spin-button{-webkit-appearance:none;margin:0;}
+    #tipo{width:90px;}
+    .recorrente-inline{height:36px;display:flex;align-items:center;gap:4px;padding:0 6px;border:1px solid #e2e8f0;border-radius:8px;background:#f8fafc;font-size:14px;cursor:pointer;}
+    .recorrente-inline input[type="checkbox"]{width:16px;height:16px;padding:0;cursor:pointer;}
+    #qtdRecorrencias{width:48px;min-width:48px;height:28px;padding:4px;text-align:center;}
+    #btnAdd{min-width:84px;}
+    #btnCancelar{min-width:78px;}
+    #btnClonar{min-width:78px;padding:6px 7px;}
+    #filtroMesAno{width:130px;}
+     .nav-mes{
+      display:flex;
+      align-items:center;
+      gap:3px;
+      flex:0 0 auto;
+    }
+    .nav-mes button{
+      width:25px;
+      height:30px;
+      padding:0;
+      border-radius:6px;
+      background:#1d4ed8;
+      color:white;
+      font-size:18px;
+      font-weight:bold;
+      line-height:1;
+    }
+    .nav-mes #labelMes{
+      min-width:110px;
+      height:30px;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      padding:0 5px;
+      border-radius:6px;
+      border:1px solid #e2e8f0;
+      background:#f8fafc;
+      font-weight:bold;
+      font-size:11px;
+      text-transform:uppercase;
+      letter-spacing:.3px;
+      white-space:nowrap;
+      cursor:pointer;
+    }
+    .nav-mes #labelMes.todos{
+      color:#64748b;
+    }
+    .nav-mes-mobile{
+      display:none;
+    }
+    #pesquisa{width:110px;min-width:110px;flex:0 0 110px;}
+    button{cursor:pointer;transition:0.2s;border:none;white-space:nowrap;}
+    button:hover:not(:disabled){transform:scale(1.05);}
+    button:disabled{opacity:.55;cursor:not-allowed;}
+    .btn-add{background:#3b82f6;color:white;font-weight:bold;}
+    .btn-cancelar{background:#64748b;color:white;font-weight:bold;}
+    .btn-clonar{background:#0891b2;color:white;font-weight:bold;}
+    .btn-backup{background:#7c3aed;color:white;font-weight:bold;}
+    .btn-baixar-backup{background:#0f766e;color:white;font-weight:bold;}
+    .btn-pago{background:#16a34a;color:white;padding:3px 6px;font-size:12px;min-width:32px;}
+    .btn-nao-pago{background:#dc2626;color:white;padding:3px 6px;font-size:12px;min-width:32px;}
+    .btn-copiar,.btn-editar,.btn-excluir{background:transparent;border:none;font-size:15px;padding:2px 4px;}
+    .btn-copiar:hover{color:#3b82f6;}
+    .btn-editar:hover{color:#f59e0b;}
+    .btn-excluir:hover{color:#dc2626;}
+     .clone-toolbar{display:none;flex-wrap:wrap;align-items:center;gap:5px;margin:5px 0 6px;padding:6px;border:1px solid #bae6fd;background:#ecfeff;border-radius:12px;font-size:13px;}
+    .clone-toolbar.ativo{display:flex;}
+    .clone-toolbar strong{color:#075985;}
+    .clone-toolbar label{display:flex;align-items:center;gap:6px;color:#0f172a;}
+    .btn-selecionar{background:#0ea5e9;color:white;font-weight:bold;}
+    .btn-clonar-selecionados{background:#06b6d4;color:white;font-weight:bold;}
+    .btn-cancelar-clone{background:#64748b;color:white;font-weight:bold;}
+    #contadorClone{font-weight:bold;color:#075985;}
+     .resumo{display:flex;gap:6px;margin-bottom:6px;}
+     .card{flex:1;padding:6px 8px;border-radius:12px;text-align:center;font-size:14px;font-weight:bold;background:#f8fafc;box-shadow:0 3px 10px rgba(0,0,0,0.05);cursor:pointer;border:2px solid transparent;transition:.2s;}
+    .card:hover{transform:translateY(-2px);}
+    .card.ativo{border-color:#3b82f6;background:#eff6ff;}
+    .card.entrada{color:#16a34a;}
+    .card.saida{color:#dc2626;}
+    .card.pendente{color:#ea580c;}
+    .card.saldo{color:#0f172a;cursor:default;}
+    .card.saldo:hover{transform:none;}
+    .dashboard-mensal{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:10px;}
+    .dash-card{padding:9px 10px;border-radius:12px;background:#f8fafc;border:1px solid #e2e8f0;box-shadow:0 2px 8px rgba(0,0,0,0.04);min-width:0;}
+    .dash-card span{display:block;font-size:11px;color:#64748b;font-weight:bold;margin-bottom:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+    .dash-card strong{display:block;font-size:13px;color:#0f172a;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+    .saldo-positivo{color:#16a34a;}
+    .saldo-negativo{color:#dc2626;}
+    .tabela-container{flex:1;overflow-y:auto;border-radius:10px;min-height:0;padding-bottom:40px;}
+    table{width:100%;border-collapse:collapse;table-layout:fixed;font-size:13px;}
+    th,td{padding:6px 8px;vertical-align:middle;text-align:center;word-wrap:break-word;}
+    th{background:#3b82f6;color:white;cursor:pointer;position:sticky;top:0;z-index:10;white-space:nowrap;}
+    th.sem-ordenacao{cursor:default;}
+    td{border-bottom:1px solid #e2e8f0;}
+    tr:hover{background:#f1f5f9;}
+    .col-selecao{display:none;width:48px;}
+    body.modo-clonagem .col-selecao{display:table-cell;}
+    .check-clone{width:18px;height:18px;cursor:pointer;}
+    .col-status{width:78px;}
+    .col-data{width:110px;}
+    .col-tipo{width:92px;}
+    .col-valor{width:120px;}
+    .col-acao{width:120px;}
+    .col-descricao{text-align:left;}
+    .entrada{color:#16a34a;font-weight:bold;}
+    .saida{color:#dc2626;font-weight:bold;}
+    .acoes{white-space:nowrap;}
+    .vazio{padding:22px;color:#64748b;font-weight:bold;text-align:center;}
+    @media(max-width:900px){
+      body{padding:0;}
+      .container{height:100vh;border-radius:0;}
+      .linha-topo{flex-direction:row;flex-wrap:nowrap;overflow-x:auto;}
+      .resumo{flex-direction:column;}
+      .dashboard-mensal{grid-template-columns:repeat(2,1fr);}
+      .login-card{max-width:340px;}
+      .clone-toolbar{flex-direction:column;align-items:stretch;}
+      .clone-toolbar label{flex-direction:column;align-items:flex-start;}
+      .clone-toolbar input,.clone-toolbar button{width:100%;}
+      table{font-size:12px;}
+      th,td{padding:6px 4px;}
+    }
+    @media(max-width:700px){
+      body{height:100dvh;overflow:hidden;display:block;padding:0;background:white;}
+      .container{width:100%;height:100dvh;min-height:100dvh;margin:0;padding:64px 10px 86px;border-radius:0;box-shadow:none;overflow:hidden;}
+      .container > h2{position:fixed;top:0;left:0;right:0;height:56px;z-index:2500;display:flex;align-items:center;justify-content:flex-start;margin:0;padding:0 62px 0 16px;background:#2b4668;color:white;font-size:18px;line-height:1.1;text-align:left;text-transform:uppercase;letter-spacing:.3px;box-shadow:0 2px 8px rgba(15,23,42,.2);}
+      .menu-wrapper{position:fixed;top:8px;right:10px;z-index:3200;display:flex;gap:8px;align-items:center;}
+      .mobile-add-toggle{display:block;width:40px;height:40px;padding:0;border-radius:50%;background:#22c55e;color:white;font-size:28px;line-height:1;font-weight:900;box-shadow:0 3px 10px rgba(0,0,0,.2);}
+      .menu-toggle{width:40px;height:40px;border-radius:12px;font-size:22px;background:#2b4668;box-shadow:none;}
+      .menu-dropdown{width:min(270px, calc(100vw - 20px));top:46px;right:0;}
+      .usuario-app{justify-content:flex-start;padding-right:48px;margin:-2px 0 6px;font-size:11px;}
+      .nav-mes-mobile{
+        display:flex;
+        align-items:center;
+        justify-content:space-between;
+        gap:8px;
+        margin:0 -10px 8px;
+        padding:8px 14px;
+        background:#2b4668;
+        color:white;
+      }
+      .nav-mes-mobile button{
+        width:38px;
+        height:38px;
+        padding:0;
+        border:none;
+        border-radius:8px;
+        background:transparent;
+        color:white;
+        font-size:24px;
+        font-weight:bold;
+        line-height:1;
+      }
+      .nav-mes-mobile #labelMesMobile{
+        flex:1;
+        text-align:center;
+        font-size:17px;
+        font-weight:bold;
+        text-transform:uppercase;
+        letter-spacing:.4px;
+        white-space:nowrap;
+        cursor:pointer;
+      }
+      .modo{max-width:100%;font-size:12px;margin-bottom:6px;}
+      .topo-fixo{flex:0 0 auto;padding-bottom:6px;background:white;}
+      .linha-topo{display:none;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;overflow:visible;padding:8px;margin-bottom:8px;border:1px solid #dbe4ef;border-radius:12px;background:#f8fafc;}
+      body.form-mobile-aberto .linha-topo{display:grid;}
+      .linha-topo > *{width:100% !important;min-width:0 !important;flex:auto !important;}
+      .linha-topo input,.linha-topo select,.linha-topo button{height:34px;font-size:12px;padding:6px 8px;}
+      #descricao,#pesquisa{grid-column:1 / -1;}
+      .nav-mes{display:none !important;}
+      .recorrente-inline{height:34px;justify-content:center;font-size:13px;}
+      #qtdRecorrencias{width:54px !important;min-width:54px !important;height:26px;}
+      .clone-toolbar{margin:6px 0 8px;padding:8px;}
+      .clone-toolbar strong{font-size:12px;}
+      .resumo{position:fixed;left:0;right:0;bottom:0;z-index:2600;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:0;margin:0;padding:6px 4px calc(6px + env(safe-area-inset-bottom));background:#2b4668;border-top:1px solid rgba(255,255,255,.25);}
+      .card{min-width:0;padding:6px 3px;border-radius:0;border:none;box-shadow:none;background:transparent;color:white !important;font-size:11px;line-height:1.2;}
+      .card span{display:block;margin-top:3px;font-size:12px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+      .card.ativo{background:rgba(255,255,255,.13);border-radius:10px;}
+      .dashboard-mensal{display:none;}
+      .tabela-container{flex:1;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:0 0 10px;border-radius:0;}
+      table,tbody,tr,td{display:block;width:100%;}
+      table{table-layout:auto;border-collapse:separate;border-spacing:0;font-size:13px;}
+      thead{display:none;}
+      tbody tr{margin:0;padding:0;border:none;box-shadow:none;}
+      td{padding:0;border-bottom:none;}
+      .mobile-section td{padding:14px 0 7px;font-size:18px;color:#0f172a;font-weight:700;}
+      .mobile-subheader td{display:grid;grid-template-columns:42px 1fr 116px 58px;gap:8px;padding:6px 8px;border-top:1px solid #47708a;border-bottom:1px solid #47708a;color:#2f7d32;font-style:italic;font-weight:700;background:white;align-items:center;}
+      .mobile-subheader .mobile-head-acoes{text-align:right;}
+      .mobile-subheader .mobile-select{display:none;}
+      body.modo-clonagem .mobile-subheader td{grid-template-columns:26px 42px 1fr 104px 54px;}
+      body.modo-clonagem .mobile-subheader td .mobile-select{display:block;}
+      .mobile-list-cell{padding:0;}
+      .mobile-item-row{display:grid;grid-template-columns:42px 1fr 116px 58px;gap:8px;align-items:center;padding:7px 8px;border-bottom:1px solid #d9e0d0;background:#f8fafc;min-height:42px;}
+      .mobile-pago-check{display:flex;justify-content:center;align-items:center;}
+      .mobile-pago-check .btn-pago,.mobile-pago-check .btn-nao-pago{min-width:36px;height:32px;font-size:14px;padding:0 6px;border-radius:9px;box-shadow:0 1px 4px rgba(0,0,0,.12);}
+      .mobile-item-row.vencida,.mobile-item-row.vencida.tipo-saida{background:#fee2e2 !important;border-left:3px solid #dc2626;}
+      .mobile-item-row.vence-hoje{background:#fef3c7 !important;border-left:3px solid #f59e0b;}
+      .mobile-item-row.vence-proxima{background:#fef9c3 !important;border-left:3px solid #eab308;}
+      tr.vencida{background:#fee2e2 !important;}
+      tr.vence-hoje{background:#fef3c7 !important;}
+      tr.vence-proxima{background:#fef9c3 !important;}
+      .mobile-item-row.tipo-saida{background:#f1f5d8;}
+      .mobile-item-info{min-width:0;}
+      .mobile-item-info strong{display:block;color:#1f2937;font-size:15px;line-height:1.15;font-weight:650;overflow:hidden;text-overflow:ellipsis;}
+      .mobile-item-info small{display:block;margin-top:2px;color:#475569;font-size:12px;line-height:1.15;}
+      .mobile-item-valor{text-align:left;min-width:0;}
+      .mobile-item-valor strong{display:block;font-size:15px;color:#334155;font-weight:500;white-space:nowrap;}
+      .mobile-item-valor small{display:block;margin-top:2px;color:#475569;font-size:12px;}
+      .mobile-item-acoes{display:flex;justify-content:flex-end;gap:2px;white-space:nowrap;}
+      .mobile-item-acoes button{padding:2px 3px;font-size:15px;}
+      .mobile-select{display:none;}
+      body.modo-clonagem .mobile-item-row{grid-template-columns:26px 42px 1fr 104px 54px;}
+      body.modo-clonagem .mobile-select{display:block;}
+      .check-clone{width:20px;height:20px;}
+      .vazio{padding:18px 8px;text-align:center;border:none;}
+    }
+    @media(max-width:420px){
+      .container > h2{font-size:17px;}
+      .card{font-size:10px;}
+      .card span{font-size:11px;}
+      .mobile-subheader td,.mobile-item-row{grid-template-columns:42px 1fr 98px 48px;}
+      body.modo-clonagem .mobile-item-row{grid-template-columns:24px 38px 1fr 88px 46px;}
+      body.modo-clonagem .mobile-subheader td{grid-template-columns:24px 38px 1fr 88px 46px;}
+      .mobile-item-info strong,.mobile-item-valor strong{font-size:14px;}
+      .mobile-item-acoes button{font-size:14px;padding:2px;}
+    }
+  
+    
+    .btn-instalar-pwa{display:none;position:fixed;bottom:100px;left:50%;transform:translateX(-50%);z-index:3500;background:#16a34a;color:white;padding:12px 20px;border-radius:30px;font-weight:bold;font-size:13px;box-shadow:0 8px 24px rgba(0,0,0,.2);align-items:center;gap:8px;animation: pulsePWA 2s infinite;}
+    .btn-instalar-pwa.mostrar{display:flex;}
+    @keyframes pulsePWA{0%{transform:translateX(-50%) scale(1)}50%{transform:translateX(-50%) scale(1.05)}100%{transform:translateX(-50%) scale(1)}}
+    @media(max-width:700px){.btn-instalar-pwa{bottom:96px;}}
+
+    /* Notificações de vencimento */
+    .btn-notificacoes{position:relative;width:38px;height:38px;padding:0;border-radius:50%;background:transparent;border:none;color:#1e293b;font-size:26px;font-weight:bold;display:flex;align-items:center;justify-content:center;box-shadow:none;cursor:pointer;transition:.2s;}
+    .btn-notificacoes:hover{transform:scale(1.15);background:#f1f5f9;}
+    .badge-notif{position:absolute;top:-2px;right:-2px;background:#dc2626;color:white;border-radius:12px;min-width:20px;height:20px;font-size:11px;display:flex;align-items:center;justify-content:center;padding:0 5px;border:2px solid white;font-weight:900;line-height:1;box-shadow:0 2px 6px rgba(220,38,38,.4);}
+    .barra-vencimentos{display:none;padding:10px 12px;border-radius:12px;margin-bottom:8px;font-size:13px;font-weight:bold;cursor:pointer;align-items:center;gap:8px;}
+    .barra-vencimentos.ativo{display:flex;}
+    .barra-vencimentos.vencida{background:#fee2e2;border:1px solid #fecaca;color:#991b1b;}
+    .barra-vencimentos.hoje{background:#fef3c7;border:1px solid #fde68a;color:#92400e;}
+    .barra-vencimentos.proxima{background:#fef9c3;border:1px solid #fde047;color:#854d0e;}
+    .painel-notificacoes{display:none;position:fixed;top:70px;right:16px;width:360px;max-width:calc(100vw - 24px);max-height:75vh;background:white;border-radius:16px;border:1px solid #e2e8f0;box-shadow:0 20px 60px rgba(15,23,42,.25);z-index:4500;flex-direction:column;overflow:hidden;}
+    .painel-notificacoes.ativo{display:flex;}
+    .notif-header{display:flex;justify-content:space-between;align-items:center;padding:12px 14px;border-bottom:1px solid #e2e8f0;background:#f8fafc;font-weight:bold;font-size:14px;}
+    .notif-lista{flex:1;overflow-y:auto;padding:10px;min-height:60px;max-height:50vh;}
+    .notif-item{padding:10px 12px;border-radius:10px;margin-bottom:8px;background:#f8fafc;border-left:4px solid #e2e8f0;font-size:12px;line-height:1.35;}
+    .notif-item strong{display:block;font-size:13px;margin-bottom:2px;color:#0f172a;}
+    .notif-item small{color:#64748b;}
+    .notif-item.vencida{background:#fee2e2;border-left-color:#dc2626;}
+    .notif-item.hoje{background:#fef3c7;border-left-color:#f59e0b;}
+    .notif-item.proxima{background:#fef9c3;border-left-color:#eab308;}
+    .notif-item .notif-acoes{margin-top:6px;display:flex;gap:6px;}
+    .notif-item .notif-acoes button{padding:4px 8px;font-size:11px;border-radius:6px;font-weight:bold;}
+    .btn-notif-pagar{background:#16a34a;color:white;}
+    .notif-config{padding:10px 12px;border-top:1px solid #e2e8f0;background:#f8fafc;font-size:12px;}
+    .notif-config label{display:flex;align-items:center;gap:6px;margin-bottom:6px;color:#334155;font-weight:600;}
+    .notif-config input[type="number"]{width:56px;height:28px;padding:4px 6px;text-align:center;}
+    @media(max-width:700px){
+      .btn-notificacoes{background:transparent;color:white;box-shadow:none;font-size:28px;width:40px;height:40px;}
+      .btn-notificacoes:hover{background:rgba(255,255,255,.15);}
+      .painel-notificacoes{top:62px;right:10px;left:10px;width:auto;}
+    }
+
+  </style>
+</head>
+<body>
+  <div id="loginScreen" class="login-screen">
+    <div class="login-card">
+      <h2>💰 Controle Financeiro</h2>
+      <p>Entre com usuário e senha</p>
+      <input type="text" id="loginUsuario" placeholder="Usuário" autocomplete="username">
+      <input type="password" id="loginSenha" placeholder="Senha" autocomplete="current-password" onkeydown="if(event.key==='Enter') entrarApp()">
+      <button onclick="entrarApp()">Entrar</button>
+      <small>Use sempre o mesmo usuário e senha para conseguir baixar/decriptar seu backup.</small>
+    </div>
+  </div>
+  <div class="container" id="appContainer" style="display:none">
+    <div class="menu-wrapper">
+      <button id="btnNotificacoes" class="btn-notificacoes" onclick="togglePainelNotificacoes(event)" title="Notificações de vencimento" aria-label="Notificações">🔔<span id="badgeNotificacoes" class="badge-notif" style="display:none">0</span></button>
+      <button class="mobile-add-toggle" onclick="toggleFormularioMobile(event)" title="Adicionar lançamento" aria-label="Adicionar lançamento">+</button>
+      <button class="menu-toggle" onclick="toggleMenu(event)" title="Menu" aria-label="Abrir menu">☰</button>
+      <div id="menuHamburger" class="menu-dropdown">
+        <button id="btnBackupFirebase" onclick="menuSalvarBackup()">💾 Salvar backup</button>
+        <button id="btnBaixarBackupFirebase" onclick="menuBaixarBackup()">⬇️ Baixar backup</button>
+        <button onclick="menuAlterarSenha()">🔑 Alterar senha</button>
+        <div class="menu-separador"></div>
+        <button class="perigo" onclick="menuSair()">🚪 Sair</button>
+      </div>
+    </div>
+    <h2>💰 Controle Financeiro</h2>
+    <div class="usuario-app">
+      <span id="usuarioLogado">Usuário: -</span>
+    </div>
+    <div class="nav-mes-mobile">
+      <button type="button" onclick="mudarMes(-1)" title="Mês anterior" aria-label="Mês anterior">&lt;</button>
+      <span id="labelMesMobile" onclick="irMesAtual()">Todos os meses</span>
+      <button type="button" onclick="mudarMes(1)" title="Próximo mês" aria-label="Próximo mês">&gt;</button>
+    </div>
+    <div id="modo" class="modo"></div>
+    <div class="topo-fixo">
+      <div class="linha-topo">
+        <input type="date" id="data">
+        <input type="text" id="descricao" placeholder="Descrição">
+        <input type="number" id="valor" placeholder="Valor" step="0.01" min="0" inputmode="decimal">
+        <select id="tipo">
+          <option value="entrada">Entrada</option>
+          <option value="saida">Saída</option>
+        </select>
+        <label class="recorrente-inline" title="Gerar lançamentos mensais recorrentes">
+          <input type="checkbox" id="recorrente" aria-label="Ativar recorrência">
+          🔁
+          <input type="number" id="qtdRecorrencias" value="1" min="1" max="60" inputmode="numeric" title="Quantidade de meses" aria-label="Quantidade de meses recorrentes">
+        </label>
+        <button class="btn-add" id="btnAdd" onclick="adicionar()">Adicionar</button>
+        <button class="btn-cancelar" id="btnCancelar" onclick="cancelar()" style="display:none">Cancelar</button>
+        <button class="btn-clonar" id="btnClonar" onclick="ativarClonagem()">🧬 Clonar</button>
+        <div class="nav-mes">
+          <button type="button" id="btnMesAnterior" onclick="mudarMes(-1)" title="Mês anterior" aria-label="Mês anterior">&lt;</button>
+          <span id="labelMes" onclick="irMesAtual()" title="Clique para voltar ao mês atual">Todos os meses</span>
+          <button type="button" id="btnMesProximo" onclick="mudarMes(1)" title="Próximo mês" aria-label="Próximo mês">&gt;</button>
+        </div>
+        <input type="hidden" id="filtroMesAno" value="">
+        <input type="text" id="pesquisa" placeholder="Pesquisar" oninput="atualizarTabela()">
+      </div>
+      <div id="cloneToolbar" class="clone-toolbar">
+        <strong>🧬 Selecione os itens que deseja clonar (clones vão para o próximo mês)</strong>
+        <label>
+          Nova data dos clones, opcional:
+          <input type="date" id="dataClone">
+        </label>
+        <button class="btn-selecionar" onclick="selecionarTodosVisiveis()">Selecionar/limpar visíveis</button>
+        <button class="btn-clonar-selecionados" id="btnClonarSelecionados" onclick="clonarSelecionados()" disabled>Clonar selecionados</button>
+        <button class="btn-cancelar-clone" onclick="cancelarClonagem()">Cancelar clonagem</button>
+        <span id="contadorClone">0 selecionado(s)</span>
+      </div>
+      <div id="barraVencimentos" class="barra-vencimentos" onclick="abrirPainelNotificacoes()"></div>
+      <div class="resumo">
+        <div class="card entrada" id="cardEntrada" onclick="filtrarTipo('entrada')">Entradas<br><span id="totalEntradas">R$ 0,00</span></div>
+        <div class="card saida" id="cardSaida" onclick="filtrarTipo('saida')">Despesas<br><span id="totalSaidas">R$ 0,00</span></div>
+        <div class="card pendente" id="cardPendente" onclick="filtrarStatusRapido('pendente')">A pagar<br><span id="totalPendentes">R$ 0,00</span></div>
+        <div class="card saldo">Saldo<br><span id="saldo">R$ 0,00</span></div>
+      </div>
+      <div class="dashboard-mensal">
+        <div class="dash-card"><span>📊 Registros</span><strong id="dashRegistros">0</strong></div>
+        <div class="dash-card"><span>✅ Despesas pagas</span><strong id="dashPago">R$ 0,00</strong></div>
+        <div class="dash-card"><span>⏳ Despesas pendentes</span><strong id="dashPendente">R$ 0,00</strong></div>
+        <div class="dash-card"><span>🔥 Maior despesa</span><strong id="dashMaiorDespesa">-</strong></div>
+      </div>
+    </div>
+    <div class="tabela-container">
+      <table>
+        <thead>
+          <tr>
+            <th class="col-selecao sem-ordenacao">Sel.</th>
+            <th class="col-status sem-ordenacao">Status</th>
+            <th class="col-data" onclick="ordenar('data')">Data ⬍</th>
+            <th class="col-descricao sem-ordenacao">Descrição</th>
+            <th class="col-tipo sem-ordenacao">Tipo</th>
+            <th class="col-valor" onclick="ordenar('valor')">Valor ⬍</th>
+            <th class="col-acao sem-ordenacao">Ação</th>
+          </tr>
+        </thead>
+        <tbody id="tabela"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div id="painelNotificacoes" class="painel-notificacoes">
+    <div class="notif-header">
+      <span>🔔 Vencimentos</span>
+      <div style="display:flex;gap:6px;align-items:center">
+        <button onclick="solicitarPermissaoNotificacao()" title="Ativar notificações do navegador" style="font-size:11px;padding:5px 9px;background:#3b82f6;color:white;border-radius:7px;font-weight:bold">🔔 Ativar</button>
+        <button onclick="fecharPainelNotificacoes()" style="background:transparent;border:none;font-size:18px;padding:2px 6px">✕</button>
+      </div>
+    </div>
+    <div id="listaNotificacoes" class="notif-lista">
+      <div style="padding:14px;text-align:center;color:#64748b;font-weight:bold">Nenhum vencimento próximo.</div>
+    </div>
+    <div class="notif-config">
+      <label><input type="checkbox" id="toggleNotifPush" checked> Notificações do navegador (PC)</label>
+      <label>⏰ Horário diário: <input type="time" id="configHorarioNotif" value="08:00"> <small id="txtProximoHorario" style="color:#64748b"></small></label>
+      <label>Avisar com <input type="number" id="configDiasNotif" min="1" max="30" value="3"> dias de antecedência</label>
+      <div style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap">
+        <button onclick="salvarConfigNotificacaoUI()" style="background:#16a34a;color:white;padding:6px 10px;border-radius:7px;font-weight:bold;font-size:12px">💾 Salvar config</button>
+        <button onclick="verificarNotificacoes(true)" style="background:#64748b;color:white;padding:6px 10px;border-radius:7px;font-weight:bold;font-size:12px">🔄 Verificar agora</button>
+        <button onclick="filtrarStatusRapido('pendente');fecharPainelNotificacoes()" style="background:#f59e0b;color:white;padding:6px 10px;border-radius:7px;font-weight:bold;font-size:12px">👁️ Ver pendentes</button>
+      </div>
+      <small style="display:block;margin-top:6px;color:#64748b;line-height:1.3">Receba alertas de contas a vencer. No celular, mantenha o app aberto e permita notificações.</small>
+    </div>
+  </div>
+
+  <button id="btnInstalarPWA" class="btn-instalar-pwa" onclick="instalarPWA()"><span>📲</span> Instalar App no PC/Celular</button>
+
+  <!-- Firebase SDK compatível com onclick global. Necessita internet ao abrir o HTML no navegador. -->
+  <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-database-compat.js"></script>
+  <script>
+    const STORAGE_KEY_BASE = "financeiroClaro";
+    let STORAGE_KEY = STORAGE_KEY_BASE;
+
+    const FIREBASE_CONFIG = {
+      apiKey: "AIzaSyDkLf1A9MhrAUrf8PL2e0n2J9w1davDgSg",
+      authDomain: "controle-financeiro-e4f3b.firebaseapp.com",
+      projectId: "controle-financeiro-e4f3b",
+      storageBucket: "controle-financeiro-e4f3b.firebasestorage.app",
+      messagingSenderId: "362985442376",
+      appId: "1:362985442376:web:2ab89ca718779c9a785c7d",
+      measurementId: "G-DDBLBMN49N",
+      databaseURL: "https://controle-financeiro-e4f3b-default-rtdb.firebaseio.com"
+    };
+    const FIREBASE_BACKUP_BASE_PATH = "usuarios";
+    let firebaseDB = null;
+    let usuarioAtual = null;
+    let senhaBackupAtual = "";
+
+    let dados = [];
+    let editandoIndex = null;
+    let ordenacaoColuna = null;
+    let ordenacaoDirecao = null;
+    let filtroTipo = null;
+    let filtroStatus = "todos";
+    let clonagemAtiva = false;
+    let selecionadosClone = new Set();
+
+    // ===== NOTIFICAÇÕES DE VENCIMENTO =====
+    let configNotificacao = {
+      diasAntecedencia: 3,
+      pushAtivo: true,
+      ultimoAvisoData: "",
+      horarioNotificacao: "08:00",
+      ultimoAvisoHorario: ""
+    };
+    let timerAgendamentoNotificacao = null;
+
+    function chaveConfigNotif(){
+      try{
+        return STORAGE_KEY_BASE + "_notifConfig_" + (usuarioAtual && usuarioAtual.uid ? usuarioAtual.uid : "geral");
+      }catch(e){
+        return STORAGE_KEY_BASE + "_notifConfig_geral";
+      }
+    }
+    function carregarConfigNotificacao(){
+      try{
+        const raw = localStorage.getItem(chaveConfigNotif());
+        if(raw){
+          const obj = JSON.parse(raw);
+          configNotificacao.diasAntecedencia = Math.max(1, Math.min(30, Number(obj.diasAntecedencia) || 3));
+          configNotificacao.pushAtivo = obj.pushAtivo !== false;
+          configNotificacao.ultimoAvisoData = obj.ultimoAvisoData || "";
+          configNotificacao.horarioNotificacao = obj.horarioNotificacao || "08:00";
+          configNotificacao.ultimoAvisoHorario = obj.ultimoAvisoHorario || "";
+        }
+      }catch(e){ console.warn("Erro ao carregar config notif", e); }
+      const inputDias = document.getElementById("configDiasNotif");
+      const togglePush = document.getElementById("toggleNotifPush");
+      const inputHorario = document.getElementById("configHorarioNotif");
+      if(inputDias) inputDias.value = configNotificacao.diasAntecedencia;
+      if(togglePush) togglePush.checked = configNotificacao.pushAtivo;
+      if(inputHorario) inputHorario.value = configNotificacao.horarioNotificacao;
+    }
+    function salvarConfigNotificacao(){
+      try{
+        localStorage.setItem(chaveConfigNotif(), JSON.stringify(configNotificacao));
+      }catch(e){ console.warn("Erro ao salvar config notif", e); }
+    }
+    function salvarConfigNotificacaoUI(){
+      const inputDias = document.getElementById("configDiasNotif");
+      const togglePush = document.getElementById("toggleNotifPush");
+      const inputHorario = document.getElementById("configHorarioNotif");
+      if(inputDias){
+        configNotificacao.diasAntecedencia = Math.max(1, Math.min(30, Number(inputDias.value) || 3));
+      }
+      if(togglePush){
+        configNotificacao.pushAtivo = togglePush.checked;
+      }
+      if(inputHorario && inputHorario.value){
+        configNotificacao.horarioNotificacao = inputHorario.value;
+      }
+      salvarConfigNotificacao();
+      iniciarAgendamentoNotificacao();
+      verificarNotificacoes(true);
+      alert("Configuração salva!\n\nHorário: "+configNotificacao.horarioNotificacao+"\nDias: "+configNotificacao.diasAntecedencia+"\nNotificações: "+(configNotificacao.pushAtivo?"Ativas":"Desativadas"));
+    }
+    function iniciarAgendamentoNotificacao(){
+      if(timerAgendamentoNotificacao) clearInterval(timerAgendamentoNotificacao);
+      // Verifica a cada 60 segundos se chegou no horário programado
+      timerAgendamentoNotificacao = setInterval(()=>{
+        try{
+          if(!configNotificacao.pushAtivo) return;
+          if(document.getElementById("appContainer").style.display === "none") return;
+          const agora = new Date();
+          const hojeISO = agora.toISOString().slice(0,10);
+          const horaAtual = agora.getHours().toString().padStart(2,"0")+":"+agora.getMinutes().toString().padStart(2,"0");
+          // Se já notificou hoje neste horário, não repete
+          if(configNotificacao.ultimoAvisoHorario === hojeISO+"_"+configNotificacao.horarioNotificacao) return;
+          if(horaAtual === configNotificacao.horarioNotificacao){
+            const vencimentos = obterVencimentosProximos();
+            if(vencimentos.length>0){
+              verificarNotificacoes(true);
+              configNotificacao.ultimoAvisoHorario = hojeISO+"_"+configNotificacao.horarioNotificacao;
+              salvarConfigNotificacao();
+            }
+          }
+        }catch(e){ console.warn(e); }
+      }, 60000);
+    }
+    function obterProximoHorarioNotificacaoTexto(){
+      const agora = new Date();
+      const [h,m] = (configNotificacao.horarioNotificacao||"08:00").split(":").map(Number);
+      let proxima = new Date();
+      proxima.setHours(h,m,0,0);
+      if(proxima <= agora){
+        proxima.setDate(proxima.getDate()+1);
+      }
+      return proxima.toLocaleString("pt-BR", {weekday:"short", day:"2-digit", month:"2-digit", hour:"2-digit", minute:"2-digit"});
+    }
+
+    function obterHojeMeiaNoite(){
+      const d = new Date();
+      d.setHours(0,0,0,0);
+      return d;
+    }
+    function diffDias(dataISO){
+      if(!dataISO || !dataISO.includes("-")) return 9999;
+      try{
+        const partes = dataISO.split("-").map(Number);
+        const data = new Date(partes[0], partes[1]-1, partes[2]);
+        data.setHours(0,0,0,0);
+        const hoje = obterHojeMeiaNoite();
+        const diffMs = data - hoje;
+        return Math.floor(diffMs / 86400000);
+      }catch(e){ return 9999; }
+    }
+    function obterStatusVencimento(item){
+      if(!item || item.tipo !== "saida" || item.pago) return "";
+      const diff = diffDias(item.data);
+      // SEMPRE avisa se vencida ou vence hoje, independente da config de antecedência
+      if(diff < 0) return "vencida";
+      if(diff === 0) return "vence-hoje";
+      // Aviso com antecedência: ex se config=3, avisa 1,2,3 dias antes
+      if(diff > 0 && diff <= configNotificacao.diasAntecedencia) return "vence-proxima";
+      return "";
+    }
+    function obterVencimentosProximos(){
+      const lista = dados.filter(item => item.tipo === "saida" && !item.pago && item.data);
+      const result = lista.map(item => {
+        const diff = diffDias(item.data);
+        let tipo = "";
+        // Sempre inclui: vencidas, hoje, e próximas dentro da antecedência
+        if(diff < 0) tipo = "vencida";
+        else if(diff === 0) tipo = "hoje"; // <-- AVISO NO DIA DO PAGAMENTO
+        else if(diff > 0 && diff <= configNotificacao.diasAntecedencia) tipo = "proxima";
+        else tipo = "";
+        return { item, diff, tipo };
+      }).filter(x => x.tipo !== "");
+      result.sort((a,b) => a.diff - b.diff);
+      return result;
+    }
+    function solicitarPermissaoNotificacao(){
+      if(!("Notification" in window)){
+        alert("Seu navegador não suporta notificações.");
+        return;
+      }
+      if(Notification.permission === "granted"){
+        alert("Notificações já estão ativadas! Você receberá alertas de vencimento.");
+        return;
+      }
+      if(Notification.permission === "denied"){
+        alert("Notificações bloqueadas no navegador. Ative nas configurações do site (cadeado na barra de endereço > Permissões > Notificações).");
+        return;
+      }
+      Notification.requestPermission().then(perm => {
+        if(perm === "granted"){
+          alert("Notificações ativadas com sucesso! 🔔");
+          verificarNotificacoes(true);
+        }else{
+          alert("Permissão de notificação não concedida.");
+        }
+      });
+    }
+    function enviarNotificacaoBrowser(titulo, corpo){
+      if(!configNotificacao.pushAtivo) return;
+      if(!("Notification" in window)) return;
+      if(Notification.permission !== "granted") return;
+      try{
+        const notif = new Notification(titulo, {
+          body: corpo,
+          icon: "https://cdn-icons-png.flaticon.com/512/138/138292.png",
+          badge: "https://cdn-icons-png.flaticon.com/512/138/138292.png",
+          tag: "financeiro-vencimento"
+        });
+        notif.onclick = function(){ window.focus(); abrirPainelNotificacoes(); };
+        setTimeout(()=>{ try{ notif.close(); }catch(e){} }, 8000);
+      }catch(e){ console.warn("Erro notif", e); }
+    }
+    function abrirPainelNotificacoes(){
+      const painel = document.getElementById("painelNotificacoes");
+      if(painel){
+        painel.classList.add("ativo");
+        fecharMenu();
+      }
+    }
+    function fecharPainelNotificacoes(){
+      const painel = document.getElementById("painelNotificacoes");
+      if(painel) painel.classList.remove("ativo");
+    }
+    function togglePainelNotificacoes(event){
+      if(event) event.stopPropagation();
+      const painel = document.getElementById("painelNotificacoes");
+      if(!painel) return;
+      const isAtivo = painel.classList.contains("ativo");
+      fecharMenu();
+      if(isAtivo) fecharPainelNotificacoes();
+      else abrirPainelNotificacoes();
+    }
+    function verificarNotificacoes(forcarPush = false){
+      try{
+        carregarConfigNotificacao();
+        const vencimentos = obterVencimentosProximos();
+        const badge = document.getElementById("badgeNotificacoes");
+        const barra = document.getElementById("barraVencimentos");
+        const listaDiv = document.getElementById("listaNotificacoes");
+        const count = vencimentos.length;
+        const hojeISO = new Date().toISOString().slice(0,10);
+
+        // Badge
+        if(badge){
+          if(count>0){
+            badge.innerText = count>99? "99+" : count;
+            badge.style.display = "flex";
+          }else{
+            badge.style.display = "none";
+          }
+        }
+
+        // Barra superior
+        if(barra){
+          if(count===0){
+            barra.className="barra-vencimentos";
+            barra.style.display="none";
+            barra.innerHTML="";
+          }else{
+            const temVencida = vencimentos.some(v=>v.tipo==="vencida");
+            const temHoje = vencimentos.some(v=>v.tipo==="hoje");
+            let classe="proxima", texto="", icone="⏰";
+            if(temVencida){
+              classe="vencida"; icone="🚨";
+              const qtdVencidas = vencimentos.filter(v=>v.tipo==="vencida").length;
+              texto = qtdVencidas+" conta"+(qtdVencidas>1?"s":"")+" vencida"+(qtdVencidas>1?"s":"")+"! Clique para ver.";
+            }else if(temHoje){
+              classe="hoje"; icone="⚠️";
+              const qtdHoje = vencimentos.filter(v=>v.tipo==="hoje").length;
+              texto = qtdHoje+" conta"+(qtdHoje>1?"s":"")+" vence hoje!"+(qtdHoje>1?" Revisar?":"");
+            }else{
+              texto = count+" conta"+(count>1?"s":"")+" vencendo em até "+configNotificacao.diasAntecedencia+" dia"+(configNotificacao.diasAntecedencia>1?"s":"")+".";
+            }
+            barra.className="barra-vencimentos ativo "+classe;
+            barra.innerHTML=icone+" "+texto;
+            barra.style.display="flex";
+          }
+        }
+
+        // Lista do painel
+        if(listaDiv){
+          if(count===0){
+            listaDiv.innerHTML='<div style="padding:14px;text-align:center;color:#64748b;font-weight:bold">✅ Nenhuma conta próxima do vencimento.<br><small style="font-weight:normal">Tudo em dia! Configurado para avisar com '+configNotificacao.diasAntecedencia+' dias de antecedência.</small></div>';
+          }else{
+            const indicePorId = new Map();
+            dados.forEach((reg, idx)=>{ if(!indicePorId.has(reg.id)) indicePorId.set(reg.id, idx); });
+            let html="";
+            vencimentos.forEach(v=>{
+              const item=v.item;
+              const idx = indicePorId.has(item.id) ? indicePorId.get(item.id) : dados.indexOf(item);
+              const labelTipo = v.tipo==="vencida" ? "VENCIDA há "+Math.abs(v.diff)+" dia"+(Math.abs(v.diff)>1?"s":"") : v.tipo==="hoje" ? "VENCE HOJE" : "Vence em "+v.diff+" dia"+(v.diff>1?"s":"");
+              const classeItem = v.tipo;
+              html+=`
+                <div class="notif-item ${classeItem}">
+                  <strong>${escapeHTML(item.descricao)} - ${formatarMoeda(item.valor)}</strong>
+                  <small>📅 ${formatarDataBR(item.data)} • ${labelTipo}</small>
+                  <div class="notif-acoes">
+                    <button class="btn-notif-pagar" onclick="togglePago(${idx})" title="Marcar como pago">✔️ Pagar</button>
+                    <button onclick="editar(${idx});fecharPainelNotificacoes()" style="background:#3b82f6;color:white">✏️ Editar</button>
+                  </div>
+                </div>
+              `;
+            });
+            listaDiv.innerHTML=html;
+          }
+        }
+
+        // Notificação push (evitar spam: só 1 vez por dia, salvo se forçar)
+        if(count>0 && configNotificacao.pushAtivo && "Notification" in window && Notification.permission==="granted"){
+          const jaNotificouHoje = configNotificacao.ultimoAvisoData === hojeISO;
+          if(forcarPush || !jaNotificouHoje){
+            const vencidas = vencimentos.filter(v=>v.tipo==="vencida").length;
+            const hojeQtd = vencimentos.filter(v=>v.tipo==="hoje").length;
+            const proximas = vencimentos.filter(v=>v.tipo==="proxima").length;
+            let titulo="Controle Financeiro - Vencimentos";
+            let corpo="";
+            if(vencidas>0) corpo+= vencidas+" vencida"+(vencidas>1?"s":"")+"! ";
+            if(hojeQtd>0) corpo+= hojeQtd+" vence hoje! ";
+            if(proximas>0) corpo+= proximas+" próxima"+(proximas>1?"s":"")+" em até "+configNotificacao.diasAntecedencia+" dia"+(configNotificacao.diasAntecedencia>1?"s":"")+".";
+            const total = vencimentos.reduce((s,v)=>s+Number(v.item.valor||0),0);
+            corpo+= " Total: "+formatarMoeda(total);
+            enviarNotificacaoBrowser(titulo, corpo);
+            configNotificacao.ultimoAvisoData = hojeISO;
+            salvarConfigNotificacao();
+          }
+        }
+
+      }catch(e){
+        console.error("Erro verificarNotificacoes", e);
+      }
+    }
+
+    // Fechar painel ao clicar fora
+    document.addEventListener("click", function(event){
+      const painel = document.getElementById("painelNotificacoes");
+      const btn = document.getElementById("btnNotificacoes");
+      if(painel && painel.classList.contains("ativo")){
+        if(btn && btn.contains(event.target)) return;
+        if(painel.contains(event.target)) return;
+        // verifica se clicou no menu-wrapper (evita fechar logo ao abrir)
+        fecharPainelNotificacoes();
+      }
+    });
+
+    // ===== FIM NOTIFICAÇÕES =====
+
+
+    function gerarId(){
+      return Date.now().toString(36) + Math.random().toString(36).slice(2, 10);
+    }
+
+    // Garante que toda a lista tenha ids únicos e válidos.
+    // Itens sem id (backups antigos) ou com id repetido recebem um id novo.
+    // Sem isso, o render por findIndex(id) faz vários itens colidirem no mesmo
+    // índice e a tabela aparenta mostrar "só alguns" lançamentos.
+    function garantirIdsUnicos(lista){
+      if(!Array.isArray(lista)){
+        return false;
+      }
+      const vistos = new Set();
+      let alterou = false;
+      lista.forEach(item => {
+        if(!item.id || vistos.has(item.id)){
+          item.id = gerarId();
+          alterou = true;
+        }
+        vistos.add(item.id);
+      });
+      return alterou;
+    }
+
+    function carregarDados(){
+      try{
+        const salvos = JSON.parse(localStorage.getItem(STORAGE_KEY));
+        if(!Array.isArray(salvos)){
+          return [];
+        }
+        const lista = salvos.map(item => ({
+          id: item.id || gerarId(),
+          data: item.data || "",
+          descricao: item.descricao || "",
+          valor: Number(item.valor) || 0,
+          tipo: item.tipo === "saida" ? "saida" : "entrada",
+          pago: Boolean(item.pago),
+          recorrente: Boolean(item.recorrente),
+          recorrenciaId: item.recorrenciaId || "",
+          recorrenciaParcela: Number(item.recorrenciaParcela) || 0,
+          recorrenciaTotal: Number(item.recorrenciaTotal) || 0
+        }));
+        garantirIdsUnicos(lista);
+        return lista;
+      }catch(erro){
+        console.error("Erro ao carregar dados do localStorage:", erro);
+        return [];
+      }
+    }
+
+    function salvar(){
+      try{
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(dados));
+      }catch(erro){
+        console.error("Erro ao salvar no localStorage:", erro);
+        alert("Não foi possível salvar os dados no navegador. Verifique o espaço disponível ou as permissões do navegador.");
+      }
+    }
+
+    function firebaseConfigurado(){
+      const valores = Object.values(FIREBASE_CONFIG);
+      return valores.every(valor => {
+        const texto = String(valor || "");
+        return texto !== "" && !texto.includes("COLE_") && !texto.includes("SEU_");
+      }) && Boolean(FIREBASE_CONFIG.databaseURL);
+    }
+
+    function inicializarFirebase(silencioso = false){
+      if(!firebaseConfigurado()){
+        if(!silencioso){
+          alert("Configure o FIREBASE_CONFIG no código antes de usar o backup.\n\nConfira principalmente o campo databaseURL do Realtime Database.");
+        }
+        return false;
+      }
+      if(typeof firebase === "undefined"){
+        if(!silencioso){
+          alert("O SDK do Firebase não foi carregado.\n\nAbra este arquivo em um navegador com internet ou verifique os scripts do Firebase.");
+        }
+        return false;
+      }
+      try{
+        if(!firebase.apps.length){
+          firebase.initializeApp(FIREBASE_CONFIG);
+        }
+        firebaseDB = firebase.database();
+        return true;
+      }catch(erro){
+        console.error("Erro ao inicializar Firebase:", erro);
+        if(!silencioso){
+          alert("Erro ao inicializar Firebase: " + (erro.message || erro));
+        }
+        return false;
+      }
+    }
+
+    function usuarioParaId(usuario){
+      return usuario.trim().toLowerCase().normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .replace(/[^a-z0-9_-]/g, "_")
+        .replace(/^_+|_+$/g, "") || "usuario";
+    }
+
+    function bufferParaHex(buffer){
+      return Array.from(new Uint8Array(buffer)).map(byte => byte.toString(16).padStart(2, "0")).join("");
+    }
+
+    function hashSimplesTexto(texto){
+      let hash = 0;
+      for(let i = 0; i < texto.length; i++){
+        hash = ((hash << 5) - hash) + texto.charCodeAt(i);
+        hash |= 0;
+      }
+      return Math.abs(hash).toString(36);
+    }
+
+    function gerarUidLogin(usuario){
+      return "u_" + usuarioParaId(usuario);
+    }
+
+    async function gerarUidLoginAntigo(usuario, senha){
+      const base = usuario.trim().toLowerCase() + "|" + senha;
+      if(window.crypto && window.crypto.subtle && window.TextEncoder){
+        const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(base));
+        return "u_" + bufferParaHex(digest);
+      }
+      return "u_" + usuarioParaId(usuario) + "_" + hashSimplesTexto(base);
+    }
+
+    async function criarHashSenhaLogin(senha){
+      if(!cryptoDisponivel()){
+        throw new Error("Seu navegador não suporta criptografia Web Crypto. Use Chrome, Edge, Firefox ou Safari atualizado.");
+      }
+      const salt = crypto.getRandomValues(new Uint8Array(16));
+      const iteracoes = 120000;
+      const material = await crypto.subtle.importKey("raw", new TextEncoder().encode(senha), "PBKDF2", false, ["deriveBits"]);
+      const bits = await crypto.subtle.deriveBits({name:"PBKDF2",salt,iterations:iteracoes,hash:"SHA-256"}, material, 256);
+      return {
+        senhaHash: bytesParaBase64(bits),
+        senhaSalt: bytesParaBase64(salt),
+        senhaIteracoes: iteracoes,
+        senhaAlgoritmo: "PBKDF2-SHA256"
+      };
+    }
+
+    async function verificarSenhaLogin(senha, login){
+      if(!login || !login.senhaHash || !login.senhaSalt){
+        return false;
+      }
+      if(!cryptoDisponivel()){
+        throw new Error("Seu navegador não suporta criptografia Web Crypto. Use Chrome, Edge, Firefox ou Safari atualizado.");
+      }
+      const salt = base64ParaBytes(login.senhaSalt);
+      const iteracoes = Number(login.senhaIteracoes) || 120000;
+      const material = await crypto.subtle.importKey("raw", new TextEncoder().encode(senha), "PBKDF2", false, ["deriveBits"]);
+      const bits = await crypto.subtle.deriveBits({name:"PBKDF2",salt,iterations:iteracoes,hash:"SHA-256"}, material, 256);
+      return bytesParaBase64(bits) === login.senhaHash;
+    }
+
+    async function entrarApp(){
+      const usuario = document.getElementById("loginUsuario").value.trim();
+      const senha = document.getElementById("loginSenha").value;
+      if(!usuario || !senha){
+        alert("Informe usuário e senha.");
+        return;
+      }
+      if(senha.length < 4){
+        alert("Use uma senha com pelo menos 4 caracteres.");
+        return;
+      }
+      if(!inicializarFirebase()){
+        return;
+      }
+      const uid = gerarUidLogin(usuario);
+      const uidAntigo = await gerarUidLoginAntigo(usuario, senha);
+      const loginRef = firebaseDB.ref(FIREBASE_BACKUP_BASE_PATH + "/" + uid + "/login");
+      try{
+        const loginSnapshot = await loginRef.once("value");
+        let usuarioCriadoAgora = false;
+        let pacoteBackupMigrado = null;
+        if(loginSnapshot.exists()){
+          const loginSalvo = loginSnapshot.val();
+          const senhaCorreta = await verificarSenhaLogin(senha, loginSalvo);
+          if(!senhaCorreta){
+            alert("Senha incorreta para o usuário " + usuario + ".\n\nEste usuário já existe. Use a senha correta para acessar o backup dele.");
+            return;
+          }
+        }else{
+          const caminhoNovoBackup = FIREBASE_BACKUP_BASE_PATH + "/" + uid + "/backups/backup_principal";
+          const caminhoAntigoBackup = FIREBASE_BACKUP_BASE_PATH + "/" + uidAntigo + "/backups/backup_principal";
+          const novoBackupSnapshot = await firebaseDB.ref(caminhoNovoBackup).once("value");
+          const antigoBackupSnapshot = uidAntigo !== uid ? await firebaseDB.ref(caminhoAntigoBackup).once("value") : null;
+          const encontrouBackupAntigo = Boolean(antigoBackupSnapshot && antigoBackupSnapshot.exists());
+          const encontrouBackupNovo = novoBackupSnapshot.exists();
+          if(encontrouBackupNovo){
+            pacoteBackupMigrado = novoBackupSnapshot.val();
+          }else if(encontrouBackupAntigo){
+            pacoteBackupMigrado = antigoBackupSnapshot.val();
+          }
+          const confirmarCriacao = confirm(
+            (encontrouBackupAntigo || encontrouBackupNovo
+              ? "Encontrei um backup para este usuário, mas o login ainda não estava registrado.\n\n"
+              : "Usuário não encontrado.\n\n") +
+            "Deseja criar o login para o usuário \"" + usuario + "\"?"
+          );
+          if(!confirmarCriacao){
+            return;
+          }
+          const hashSenha = await criarHashSenhaLogin(senha);
+          const agora = new Date();
+          await loginRef.set({
+            usuario,
+            usuarioNormalizado: usuarioParaId(usuario),
+            criadoEmISO: agora.toISOString(),
+            criadoEmBR: agora.toLocaleString("pt-BR"),
+            ...hashSenha
+          });
+          usuarioCriadoAgora = true;
+          if(encontrouBackupAntigo && !encontrouBackupNovo){
+            await firebaseDB.ref(caminhoNovoBackup).set(antigoBackupSnapshot.val());
+          }
+        }
+
+        usuarioAtual = { uid, usuario };
+        senhaBackupAtual = senha;
+        STORAGE_KEY = STORAGE_KEY_BASE + "_" + usuarioAtual.uid;
+        dados = carregarDados();
+
+        const storageKeyAntigo = STORAGE_KEY_BASE + "_" + uidAntigo;
+        if(dados.length === 0 && storageKeyAntigo !== STORAGE_KEY){
+          try{
+            const dadosLocaisAntigos = JSON.parse(localStorage.getItem(storageKeyAntigo) || "null");
+            if(Array.isArray(dadosLocaisAntigos) && dadosLocaisAntigos.length > 0){
+              dados = normalizarDadosBackup(dadosLocaisAntigos);
+              salvar();
+            }
+          }catch(erro){
+            console.warn("Não foi possível migrar dados locais antigos:", erro);
+          }
+        }
+
+        if(dados.length === 0 && pacoteBackupMigrado){
+          try{
+            const backupMigrado = await descriptografarBackup(pacoteBackupMigrado);
+            if(backupMigrado && Array.isArray(backupMigrado.dados)){
+              dados = normalizarDadosBackup(backupMigrado.dados);
+              salvar();
+            }
+          }catch(erro){
+            console.warn("Login criado, mas não foi possível restaurar automaticamente o backup migrado:", erro);
+          }
+        }
+
+        limparFiltros();
+        document.getElementById("loginSenha").value = "";
+        document.getElementById("loginScreen").style.display = "none";
+        document.getElementById("appContainer").style.display = "flex";
+        document.getElementById("usuarioLogado").innerText = "Usuário: " + usuario;
+        carregarConfigNotificacao();
+        iniciarAgendamentoNotificacao();
+        atualizarTabela();
+        // Pede permissão de notificação automaticamente se configurado
+        if(configNotificacao.pushAtivo && "Notification" in window && Notification.permission === "default"){
+          setTimeout(()=>{ solicitarPermissaoNotificacao(); }, 1500);
+        }
+        setTimeout(()=>{ verificarNotificacoes(true); }, 800);
+        if(usuarioCriadoAgora){
+          alert("Login criado com sucesso para " + usuario + ".");
+        }
+      }catch(erro){
+        console.error("Erro no login:", erro);
+        alert("Não foi possível entrar.\n\nDetalhes: " + (erro.message || erro));
+      }
+    }
+
+    function sairApp(){
+      if(!confirm("Sair do controle financeiro?")){
+        return;
+      }
+      usuarioAtual = null;
+      senhaBackupAtual = "";
+      STORAGE_KEY = STORAGE_KEY_BASE;
+      dados = [];
+      cancelar(false);
+      limparFiltros();
+      document.getElementById("appContainer").style.display = "none";
+      document.getElementById("loginScreen").style.display = "flex";
+  
+    // ===== PWA - Instalação e Service Worker =====
+    let deferredPrompt = null;
+    const btnInstalar = document.getElementById("btnInstalarPWA");
+
+    window.addEventListener("beforeinstallprompt", (e) => {
+      console.log("[PWA] beforeinstallprompt");
+      e.preventDefault();
+      deferredPrompt = e;
+      if(btnInstalar) btnInstalar.classList.add("mostrar");
+    });
+
+    async function instalarPWA(){
+      if(!deferredPrompt){
+        // Se já está instalado ou navegador não suporta prompt, mostra instruções
+        if(window.matchMedia("(display-mode: standalone)").matches){
+          alert("App já está instalado! ✅\nProcure por 'Controle Financeiro' no seu menu iniciar ou tela inicial.");
+        } else {
+          alert("Para instalar:\n\nPC - Chrome: Clique nos 3 pontinhos no canto superior direito > Instalar app / Salvar e compartilhar > Instalar\n\nCelular - Chrome: 3 pontinhos > Adicionar à tela inicial\n\nOu: Barra de endereço > ícone de instalar (computador com +)");
+        }
+        return;
+      }
+      deferredPrompt.prompt();
+      const { outcome } = await deferredPrompt.userChoice;
+      console.log("[PWA] userChoice", outcome);
+      if(outcome === "accepted"){
+        if(btnInstalar) btnInstalar.classList.remove("mostrar");
+      }
+      deferredPrompt = null;
+    }
+
+    window.addEventListener("appinstalled", () => {
+      console.log("[PWA] App instalado");
+      if(btnInstalar) btnInstalar.classList.remove("mostrar");
+      deferredPrompt = null;
+      alert("🎉 App instalado com sucesso! Agora você pode abrir direto da área de trabalho e receber notificações mesmo com o navegador fechado.");
+    });
+
+    // Registro do Service Worker
+    if("serviceWorker" in navigator){
+      window.addEventListener("load", async () => {
+        try{
+          const reg = await navigator.serviceWorker.register("./service-worker.js");
+          console.log("[PWA] SW registrado", reg.scope);
+          
+          // Verifica atualizações
+          reg.addEventListener("updatefound", () => {
+            const newWorker = reg.installing;
+            newWorker.addEventListener("statechange", () => {
+              if(newWorker.state === "installed" && navigator.serviceWorker.controller){
+                // Nova versão disponível
+                if(confirm("Nova versão do app disponível! Deseja atualizar?")){
+                  newWorker.postMessage({ type: "SKIP_WAITING" });
+                  window.location.reload();
+                }
+              }
+            });
+          });
+
+          // Escuta mensagens do SW
+          navigator.serviceWorker.addEventListener("message", (event) => {
+            if(event.data?.type === "FILTRAR_PENDENTES"){
+              filtrarStatusRapido("pendente");
+            }
+            if(event.data?.type === "VERIFICAR_VENCIMENTOS"){
+              verificarNotificacoes(true);
+            }
+          });
+
+          // Solicita permissão para notificações periódicas se disponível
+          if("periodicSync" in reg){
+            try{
+              const status = await navigator.permissions.query({ name: "periodic-background-sync" });
+              if(status.state === "granted"){
+                await reg.periodicSync.register("verificar-vencimentos", { minInterval: 12 * 60 * 60 * 1000 });
+                console.log("[PWA] Periodic sync registrado");
+              }
+            }catch(e){ console.warn("[PWA] Periodic sync não suportado", e); }
+          }
+
+        }catch(err){
+          console.error("[PWA] Falha ao registrar SW", err);
+        }
+      });
+    }
+
+    // Função para mostrar notificação via Service Worker (mais confiável no PC)
+    function mostrarNotificacaoViaSW(titulo, corpo){
+      if("serviceWorker" in navigator && navigator.serviceWorker.controller){
+        navigator.serviceWorker.controller.postMessage({
+          type: "SHOW_NOTIFICATION",
+          title: titulo,
+          body: corpo,
+          url: "./controle-financeiro.html"
+        });
+      } else {
+        enviarNotificacaoBrowser(titulo, corpo);
+      }
+    }
+
+    // Sobrescreve enviarNotificacaoBrowser para usar SW quando possível
+    const enviarNotificacaoBrowserOriginal = enviarNotificacaoBrowser;
+    enviarNotificacaoBrowser = function(titulo, corpo){
+      if("serviceWorker" in navigator && navigator.serviceWorker.controller && Notification.permission === "granted"){
+        mostrarNotificacaoViaSW(titulo, corpo);
+      } else {
+        enviarNotificacaoBrowserOriginal(titulo, corpo);
+      }
+    };
+
+    // Detecta se abriu via atalho de PWA (shortcuts)
+    window.addEventListener("load", ()=>{
+      const params = new URLSearchParams(location.search);
+      if(params.get("acao")==="adicionar"){
+        setTimeout(()=>{ abrirFormularioMobile(); document.getElementById("descricao")?.focus(); }, 500);
+      }
+      if(params.get("acao")==="vencimentos" || params.get("filtro")==="pendente"){
+        setTimeout(()=>{ filtrarStatusRapido("pendente"); abrirPainelNotificacoes(); }, 600);
+      }
+    });
+
+    document.getElementById("loginUsuario").focus();
+    }
+
+    function limparFiltros(){
+      filtroTipo = null;
+      filtroStatus = "todos";
+      const filtroMes = document.getElementById("filtroMesAno");
+      const pesquisa = document.getElementById("pesquisa");
+      // Ao entrar, o app já abre no mês atual (igual a um app de celular).
+      if(filtroMes) filtroMes.value = mesAtualISO();
+      if(pesquisa) pesquisa.value = "";
+      atualizarLabelMes();
+    }
+
+    // Retorna o mês de hoje no formato "AAAA-MM".
+    function mesAtualISO(){
+      const hoje = new Date();
+      return hoje.getFullYear() + "-" + pad2(hoje.getMonth() + 1);
+    }
+
+    const NOMES_MESES = [
+      "Janeiro","Fevereiro","Março","Abril","Maio","Junho",
+      "Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"
+    ];
+
+    // Atualiza os rótulos "MÊS/ANO" (desktop e mobile) a partir do filtro de mês.
+    function atualizarLabelMes(){
+      const valor = document.getElementById("filtroMesAno").value;
+      const label = document.getElementById("labelMes");
+      const labelMobile = document.getElementById("labelMesMobile");
+      let texto;
+      if(valor && valor.includes("-")){
+        const [ano, mes] = valor.split("-").map(Number);
+        texto = NOMES_MESES[mes - 1] + "/" + ano;
+      }else{
+        texto = "Todos os meses";
+      }
+      if(label){
+        label.innerText = texto;
+        label.classList.toggle("todos", !valor);
+      }
+      if(labelMobile){
+        labelMobile.innerText = texto;
+      }
+    }
+
+    // Avança/volta meses. Se não houver mês selecionado, começa do mês atual.
+    function mudarMes(passo){
+      const filtroMes = document.getElementById("filtroMesAno");
+      let valor = filtroMes.value;
+      if(!valor || !valor.includes("-")){
+        valor = mesAtualISO();
+      }
+      const [ano, mes] = valor.split("-").map(Number);
+      const idx = (mes - 1) + passo;
+      const novoAno = ano + Math.floor(idx / 12);
+      const novoMes = ((idx % 12) + 12) % 12;
+      filtroMes.value = novoAno + "-" + pad2(novoMes + 1);
+      atualizarLabelMes();
+      atualizarTabela();
+    }
+
+    // Clicar no nome do mês volta para o mês atual.
+    function irMesAtual(){
+      document.getElementById("filtroMesAno").value = mesAtualISO();
+      atualizarLabelMes();
+      atualizarTabela();
+    }
+
+    function toggleFormularioMobile(event){
+      if(event){ event.stopPropagation(); }
+      if(!estaEmModoMobile()){ return; }
+      fecharMenu();
+      document.body.classList.toggle("form-mobile-aberto");
+    }
+
+    function abrirFormularioMobile(){
+      if(estaEmModoMobile()){
+        document.body.classList.add("form-mobile-aberto");
+      }
+    }
+
+    function fecharFormularioMobile(){
+      document.body.classList.remove("form-mobile-aberto");
+    }
+
+    function toggleMenu(event){
+      if(event){ event.stopPropagation(); }
+      const menu = document.getElementById("menuHamburger");
+      menu.classList.toggle("ativo");
+    }
+
+    function fecharMenu(){
+      const menu = document.getElementById("menuHamburger");
+      if(menu){ menu.classList.remove("ativo"); }
+    }
+
+    function menuSalvarBackup(){ fecharMenu(); salvarBackupFirebase(); }
+    function menuBaixarBackup(){ fecharMenu(); baixarBackupFirebase(); }
+    function menuAlterarSenha(){ fecharMenu(); trocarSenhaApp(); }
+    function menuSair(){ fecharMenu(); sairApp(); }
+
+    document.addEventListener("click", function(event){
+      const menuWrapper = document.querySelector(".menu-wrapper");
+      if(menuWrapper && !menuWrapper.contains(event.target)){
+        fecharMenu();
+      }
+    });
+
+    function obterCaminhoBackup(){
+      if(!usuarioAtual){ return null; }
+      return FIREBASE_BACKUP_BASE_PATH + "/" + usuarioAtual.uid + "/backups/backup_principal";
+    }
+
+    function exigirLoginFirebase(){
+      if(!usuarioAtual){
+        alert("Faça login com usuário e senha antes de salvar/baixar backup.");
+        return false;
+      }
+      if(!inicializarFirebase()){
+        return false;
+      }
+      return true;
+    }
+
+    function cryptoDisponivel(){
+      return Boolean(window.crypto && window.crypto.subtle && window.TextEncoder && window.TextDecoder);
+    }
+
+    function bytesParaBase64(bytes){
+      const array = bytes instanceof Uint8Array ? bytes : new Uint8Array(bytes);
+      let binario = "";
+      const tamanhoBloco = 0x8000;
+      for(let i = 0; i < array.length; i += tamanhoBloco){
+        const bloco = array.subarray(i, i + tamanhoBloco);
+        binario += String.fromCharCode.apply(null, bloco);
+      }
+      return btoa(binario);
+    }
+
+    function base64ParaBytes(base64){
+      const binario = atob(base64);
+      const bytes = new Uint8Array(binario.length);
+      for(let i = 0; i < binario.length; i++){
+        bytes[i] = binario.charCodeAt(i);
+      }
+      return bytes;
+    }
+
+    async function derivarChaveBackup(senha, salt, iteracoes){
+      const material = await crypto.subtle.importKey("raw", new TextEncoder().encode(senha), "PBKDF2", false, ["deriveKey"]);
+      return crypto.subtle.deriveKey(
+        {name:"PBKDF2",salt,iterations:iteracoes,hash:"SHA-256"},
+        material,
+        {name:"AES-GCM",length:256},
+        false,
+        ["encrypt", "decrypt"]
+      );
+    }
+
+    async function criptografarBackup(backup){
+      if(!cryptoDisponivel()){
+        throw new Error("Seu navegador não suporta criptografia Web Crypto. Use Chrome, Edge, Firefox ou Safari atualizado.");
+      }
+      const salt = crypto.getRandomValues(new Uint8Array(16));
+      const iv = crypto.getRandomValues(new Uint8Array(12));
+      const iteracoes = 150000;
+      const chave = await derivarChaveBackup(senhaBackupAtual, salt, iteracoes);
+      const conteudo = new TextEncoder().encode(JSON.stringify(backup));
+      const criptografado = await crypto.subtle.encrypt({ name:"AES-GCM", iv }, chave, conteudo);
+      return {
+        criptografado:true,
+        algoritmo:"AES-GCM",
+        kdf:"PBKDF2-SHA256",
+        iteracoes,
+        salt:bytesParaBase64(salt),
+        iv:bytesParaBase64(iv),
+        conteudo:bytesParaBase64(criptografado),
+        usuario: usuarioAtual.usuario,
+        usuarioUid: usuarioAtual.uid,
+        totalRegistros: backup.totalRegistros,
+        atualizadoEmISO: backup.atualizadoEmISO,
+        atualizadoEmBR: backup.atualizadoEmBR,
+        versao:2
+      };
+    }
+
+    async function descriptografarBackup(pacote){
+      if(pacote && Array.isArray(pacote.dados)){
+        return pacote;
+      }
+      if(!pacote || !pacote.criptografado){
+        throw new Error("Backup inválido ou não reconhecido.");
+      }
+      if(!cryptoDisponivel()){
+        throw new Error("Seu navegador não suporta criptografia Web Crypto.");
+      }
+      try{
+        const salt = base64ParaBytes(pacote.salt);
+        const iv = base64ParaBytes(pacote.iv);
+        const conteudo = base64ParaBytes(pacote.conteudo);
+        const chave = await derivarChaveBackup(senhaBackupAtual, salt, Number(pacote.iteracoes) || 150000);
+        const descriptografado = await crypto.subtle.decrypt({ name:"AES-GCM", iv }, chave, conteudo);
+        return JSON.parse(new TextDecoder().decode(descriptografado));
+      }catch(erro){
+        console.error("Erro ao descriptografar backup:", erro);
+        throw new Error("Não foi possível abrir o backup. Verifique se usuário e senha são os mesmos usados ao salvar.");
+      }
+    }
+
+    function normalizarDadosBackup(lista){
+      if(!Array.isArray(lista)){
+        return [];
+      }
+      const normalizada = lista.map(item => ({
+        id: item.id || gerarId(),
+        data: item.data || "",
+        descricao: item.descricao || "",
+        valor: Number(item.valor) || 0,
+        tipo: item.tipo === "saida" ? "saida" : "entrada",
+        pago: Boolean(item.pago),
+        recorrente: Boolean(item.recorrente),
+        recorrenciaId: item.recorrenciaId || "",
+        recorrenciaParcela: Number(item.recorrenciaParcela) || 0,
+        recorrenciaTotal: Number(item.recorrenciaTotal) || 0
+      }));
+      garantirIdsUnicos(normalizada);
+      return normalizada;
+    }
+
+    function montarBackup(){
+      const agora = new Date();
+      return {
+        dados: dados.map(item => ({
+          id: item.id,
+          data: item.data,
+          descricao: item.descricao,
+          valor: Number(item.valor) || 0,
+          tipo: item.tipo,
+          pago: Boolean(item.pago),
+          recorrente: Boolean(item.recorrente),
+          recorrenciaId: item.recorrenciaId || "",
+          recorrenciaParcela: Number(item.recorrenciaParcela) || 0,
+          recorrenciaTotal: Number(item.recorrenciaTotal) || 0
+        })),
+        totalRegistros: dados.length,
+        usuarioUid: usuarioAtual.uid,
+        usuario: usuarioAtual.usuario,
+        localStorageKey: STORAGE_KEY,
+        atualizadoEmISO: agora.toISOString(),
+        atualizadoEmBR: agora.toLocaleString("pt-BR"),
+        origem: location.href,
+        versao: 2
+      };
+    }
+
+    async function trocarSenhaApp(){
+      if(!usuarioAtual){
+        alert("Faça login antes de trocar a senha.");
+        return;
+      }
+      if(!exigirLoginFirebase()){
+        return;
+      }
+      const novaSenha = prompt("Digite a nova senha para o usuário " + usuarioAtual.usuario + ":");
+      if(novaSenha === null){ return; }
+      if(novaSenha.length < 4){
+        alert("A nova senha precisa ter pelo menos 4 caracteres.");
+        return;
+      }
+      const confirmarSenha = prompt("Confirme a nova senha:");
+      if(confirmarSenha === null){ return; }
+      if(novaSenha !== confirmarSenha){
+        alert("As senhas não conferem.");
+        return;
+      }
+      if(novaSenha === senhaBackupAtual){
+        alert("A nova senha é igual à senha atual.");
+        return;
+      }
+      if(!confirm("Trocar a senha do usuário " + usuarioAtual.usuario + "?\n\nO login continuará sendo o mesmo usuário.\nO backup será salvo novamente criptografado com a nova senha.")){
+        return;
+      }
+      const senhaAntiga = senhaBackupAtual;
+      const loginRef = firebaseDB.ref(FIREBASE_BACKUP_BASE_PATH + "/" + usuarioAtual.uid + "/login");
+      try{
+        senhaBackupAtual = novaSenha;
+        const hashSenha = await criarHashSenhaLogin(novaSenha);
+        const agora = new Date();
+        await loginRef.update({
+          ...hashSenha,
+          alteradoEmISO: agora.toISOString(),
+          alteradoEmBR: agora.toLocaleString("pt-BR")
+        });
+        const pacoteCriptografado = await criptografarBackup(montarBackup());
+        await firebaseDB.ref(obterCaminhoBackup()).set(pacoteCriptografado);
+        alert("Senha alterada com sucesso! Use a nova senha nos próximos acessos.");
+      }catch(erro){
+        senhaBackupAtual = senhaAntiga;
+        console.error("Erro ao trocar senha:", erro);
+        alert("Não foi possível trocar a senha. Nada foi alterado.\n\nDetalhes: " + (erro.message || erro));
+      }
+    }
+
+    async function salvarBackupFirebase(){
+      if(!exigirLoginFirebase()){ return; }
+      const botao = document.getElementById("btnBackupFirebase");
+      const textoOriginal = botao ? botao.innerText : "";
+      try{
+        if(botao){ botao.disabled = true; botao.innerText = "⏳ Salvando..."; }
+        salvar();
+        const backup = montarBackup();
+        const pacoteCriptografado = await criptografarBackup(backup);
+        await firebaseDB.ref(obterCaminhoBackup()).set(pacoteCriptografado);
+        alert("Backup salvo com sucesso no Firebase Realtime Database!");
+      }catch(erro){
+        console.error("Erro ao salvar backup no Firebase:", erro);
+        alert("Não foi possível salvar o backup no Firebase.\n\nDetalhes: " + (erro.message || erro));
+      }finally{
+        if(botao){ botao.disabled = false; botao.innerText = textoOriginal; }
+      }
+    }
+
+    async function baixarBackupFirebase(){
+      if(!exigirLoginFirebase()){ return; }
+      const botao = document.getElementById("btnBaixarBackupFirebase");
+      const textoOriginal = botao ? botao.innerText : "";
+      try{
+        if(botao){ botao.disabled = true; botao.innerText = "⏳ Baixando..."; }
+        const snapshot = await firebaseDB.ref(obterCaminhoBackup()).once("value");
+        if(!snapshot.exists()){
+          alert("Nenhum backup foi encontrado no Firebase ainda.");
+          return;
+        }
+        const pacoteBackup = snapshot.val();
+        const backup = await descriptografarBackup(pacoteBackup);
+        if(!backup || !Array.isArray(backup.dados)){
+          alert("O backup encontrado não está em um formato válido.");
+          return;
+        }
+        const quantidadeBackup = backup.dados.length;
+        const dataBackup = pacoteBackup.atualizadoEmBR || backup.atualizadoEmBR || pacoteBackup.atualizadoEmISO || backup.atualizadoEmISO || "data não informada";
+        const confirmar = confirm(
+          "Backup encontrado!\n\n" +
+          "Data do backup: " + dataBackup + "\n" +
+          "Registros no backup: " + quantidadeBackup + "\n" +
+          "Registros locais atuais: " + dados.length + "\n\n" +
+          "Deseja substituir os dados locais por este backup?"
+        );
+        if(!confirmar){ return; }
+        dados = normalizarDadosBackup(backup.dados);
+        cancelar(false);
+        salvar();
+        atualizarTabela();
+        alert("Backup baixado e restaurado com sucesso!");
+      }catch(erro){
+        console.error("Erro ao baixar backup do Firebase:", erro);
+        alert("Não foi possível baixar o backup do Firebase.\n\nDetalhes: " + (erro.message || erro));
+      }finally{
+        if(botao){ botao.disabled = false; botao.innerText = textoOriginal; }
+      }
+    }
+
+    function escapeHTML(texto){
+      const div = document.createElement("div");
+      div.innerText = String(texto ?? "");
+      return div.innerHTML;
+    }
+
+    function escapeAttribute(texto){
+      return escapeHTML(texto).replace(/"/g, "&quot;");
+    }
+
+    function formatarMoeda(valor){
+      return Number(valor || 0).toLocaleString("pt-BR", { style:"currency", currency:"BRL" });
+    }
+
+    function formatarDataBR(dataISO){
+      if(!dataISO || !dataISO.includes("-")){
+        return dataISO || "";
+      }
+      const partes = dataISO.split("-");
+      return partes[2] + "/" + partes[1] + "/" + partes[0];
+    }
+
+    function pad2(numero){
+      return String(numero).padStart(2, "0");
+    }
+
+    function adicionarMesesData(dataISO, quantidadeMeses){
+      const partes = dataISO.split("-").map(Number);
+      const ano = partes[0];
+      const mes = partes[1];
+      const dia = partes[2];
+      const indiceMes = mes - 1 + quantidadeMeses;
+      const novoAno = ano + Math.floor(indiceMes / 12);
+      const novoMesIndice = ((indiceMes % 12) + 12) % 12;
+      const ultimoDiaNovoMes = new Date(novoAno, novoMesIndice + 1, 0).getDate();
+      const novoDia = Math.min(dia, ultimoDiaNovoMes);
+      return novoAno + "-" + pad2(novoMesIndice + 1) + "-" + pad2(novoDia);
+    }
+
+    function criarRegistroFinanceiro(data, descricao, valor, tipo, opcoes = {}){
+      return {
+        id: gerarId(),
+        data,
+        descricao,
+        valor: Number(valor) || 0,
+        tipo,
+        pago:false,
+        recorrente: Boolean(opcoes.recorrente),
+        recorrenciaId: opcoes.recorrenciaId || "",
+        recorrenciaParcela: Number(opcoes.recorrenciaParcela) || 0,
+        recorrenciaTotal: Number(opcoes.recorrenciaTotal) || 0
+      };
+    }
+
+    function limparFormulario(){
+      document.getElementById("data").value = "";
+      document.getElementById("descricao").value = "";
+      document.getElementById("valor").value = "";
+      document.getElementById("tipo").value = "entrada";
+      document.getElementById("recorrente").checked = false;
+      document.getElementById("qtdRecorrencias").value = "1";
+      document.getElementById("dataClone").value = "";
+    }
+
+    function mostrarModo(texto, classe){
+      const modo = document.getElementById("modo");
+      modo.innerText = texto;
+      modo.className = "modo " + classe;
+      modo.style.display = "block";
+      document.getElementById("btnCancelar").style.display = "inline-block";
+    }
+
+    function esconderModo(){
+      document.getElementById("modo").style.display = "none";
+      document.getElementById("btnCancelar").style.display = "none";
+    }
+
+    function aplicarEstadoClonagem(){
+      document.body.classList.toggle("modo-clonagem", clonagemAtiva);
+      document.getElementById("cloneToolbar").classList.toggle("ativo", clonagemAtiva);
+      atualizarContadorClone();
+    }
+
+    function desativarClonagem(atualizar = true){
+      clonagemAtiva = false;
+      selecionadosClone.clear();
+      aplicarEstadoClonagem();
+      if(atualizar){
+        atualizarTabela();
+      }
+    }
+
+    function cancelar(atualizar = true){
+      editandoIndex = null;
+      document.getElementById("btnAdd").innerText = "Adicionar";
+      limparFormulario();
+      esconderModo();
+      desativarClonagem(false);
+      fecharFormularioMobile();
+      if(atualizar){
+        atualizarTabela();
+      }
+    }
+
+    function filtrarTipo(tipo){
+      filtroTipo = filtroTipo === tipo ? null : tipo;
+      atualizarTabela();
+    }
+
+    function filtrarStatusRapido(status){
+      filtroStatus = filtroStatus === status ? "todos" : status;
+      atualizarTabela();
+    }
+
+    function atualizarCardsFiltro(){
+      document.getElementById("cardEntrada").classList.toggle("ativo", filtroTipo === "entrada");
+      document.getElementById("cardSaida").classList.toggle("ativo", filtroTipo === "saida");
+      document.getElementById("cardPendente").classList.toggle("ativo", filtroStatus === "pendente");
+    }
+
+    function adicionar(){
+      const data = document.getElementById("data").value;
+      const descricao = document.getElementById("descricao").value.trim();
+      const valor = Number(document.getElementById("valor").value);
+      const tipo = document.getElementById("tipo").value;
+      const recorrente = document.getElementById("recorrente").checked;
+      const qtdRecorrencias = Math.max(1, Math.min(60, Number(document.getElementById("qtdRecorrencias").value) || 1));
+
+      if(!data || descricao === "" || isNaN(valor) || valor <= 0){
+        alert("Preencha todos os campos corretamente. O valor precisa ser maior que zero.");
+        return;
+      }
+
+      if(editandoIndex !== null && dados[editandoIndex]){
+        dados[editandoIndex] = {
+          ...dados[editandoIndex],
+          data,
+          descricao,
+          valor,
+          tipo,
+          pago: tipo === "saida" ? Boolean(dados[editandoIndex].pago) : false
+        };
+      }else{
+        const gerarRecorrencias = recorrente && qtdRecorrencias > 1;
+        const recorrenciaId = gerarRecorrencias ? gerarId() : "";
+        const registros = [];
+        for(let i = 0; i < (gerarRecorrencias ? qtdRecorrencias : 1); i++){
+          registros.push(criarRegistroFinanceiro(
+            adicionarMesesData(data, i),
+            descricao,
+            valor,
+            tipo,
+            {
+              recorrente: gerarRecorrencias,
+              recorrenciaId,
+              recorrenciaParcela: gerarRecorrencias ? i + 1 : 0,
+              recorrenciaTotal: gerarRecorrencias ? qtdRecorrencias : 0
+            }
+          ));
+        }
+        dados.push(...registros);
+      }
+
+      cancelar(false);
+      salvar();
+      atualizarTabela();
+    }
+
+    function editar(index){
+      const item = dados[index];
+      if(!item){ return; }
+      desativarClonagem(false);
+      abrirFormularioMobile();
+      document.getElementById("data").value = item.data;
+      document.getElementById("descricao").value = item.descricao;
+      document.getElementById("valor").value = item.valor;
+      document.getElementById("tipo").value = item.tipo;
+      document.getElementById("recorrente").checked = false;
+      document.getElementById("qtdRecorrencias").value = "1";
+      editandoIndex = index;
+      document.getElementById("btnAdd").innerText = "Salvar";
+      mostrarModo("✏️ Modo edição", "edicao");
+      atualizarTabela();
+    }
+
+    function copiar(index){
+      const item = dados[index];
+      if(!item){ return; }
+      desativarClonagem(false);
+      abrirFormularioMobile();
+      document.getElementById("data").value = item.data;
+      document.getElementById("descricao").value = item.descricao;
+      document.getElementById("valor").value = item.valor;
+      document.getElementById("tipo").value = item.tipo;
+      document.getElementById("recorrente").checked = false;
+      document.getElementById("qtdRecorrencias").value = "1";
+      editandoIndex = null;
+      document.getElementById("btnAdd").innerText = "Adicionar";
+      mostrarModo("📋 Modo cópia", "copia");
+      atualizarTabela();
+    }
+
+    function togglePago(index){
+      if(!dados[index] || dados[index].tipo !== "saida"){ return; }
+      dados[index].pago = !dados[index].pago;
+      salvar();
+      atualizarTabela();
+    }
+
+    function remover(index){
+      const item = dados[index];
+      if(!item){ return; }
+      if(confirm("Excluir registro?")){
+        dados.splice(index, 1);
+        selecionadosClone.delete(item.id);
+        editandoIndex = null;
+        document.getElementById("btnAdd").innerText = "Adicionar";
+        salvar();
+        atualizarTabela();
+      }
+    }
+
+    function ordenar(coluna){
+      if(ordenacaoColuna !== coluna){
+        ordenacaoColuna = coluna;
+        ordenacaoDirecao = "asc";
+      }else if(ordenacaoDirecao === "asc"){
+        ordenacaoDirecao = "desc";
+      }else{
+        ordenacaoColuna = null;
+        ordenacaoDirecao = null;
+      }
+      atualizarTabela();
+    }
+
+    function ativarClonagem(){
+      if(dados.length === 0){
+        alert("Não há itens cadastrados para clonar.");
+        return;
+      }
+      // Garante que nenhum item fique escondido por id duplicado/vazio antes de clonar.
+      if(garantirIdsUnicos(dados)){
+        salvar();
+      }
+      editandoIndex = null;
+      document.getElementById("btnAdd").innerText = "Adicionar";
+      limparFormulario();
+      clonagemAtiva = true;
+      selecionadosClone.clear();
+      mostrarModo("🧬 Modo clonagem", "clonagem");
+      aplicarEstadoClonagem();
+      atualizarTabela();
+    }
+
+    function cancelarClonagem(){
+      desativarClonagem(false);
+      esconderModo();
+      atualizarTabela();
+    }
+
+    function alternarSelecionado(id, marcado){
+      if(marcado){
+        selecionadosClone.add(id);
+      }else{
+        selecionadosClone.delete(id);
+      }
+      atualizarContadorClone();
+    }
+
+    function atualizarContadorClone(){
+      const contador = document.getElementById("contadorClone");
+      const botaoClonar = document.getElementById("btnClonarSelecionados");
+      if(contador){
+        contador.innerText = selecionadosClone.size + " selecionado(s)";
+      }
+      if(botaoClonar){
+        botaoClonar.disabled = selecionadosClone.size === 0;
+      }
+    }
+
+    function selecionarTodosVisiveis(){
+      const checks = Array.from(document.querySelectorAll(".check-clone"));
+      if(checks.length === 0){
+        alert("Nenhum item visível para selecionar.");
+        return;
+      }
+      const todosMarcados = checks.every(check => check.checked);
+      checks.forEach(check => {
+        check.checked = !todosMarcados;
+        if(!todosMarcados){
+          selecionadosClone.add(check.value);
+        }else{
+          selecionadosClone.delete(check.value);
+        }
+      });
+      atualizarContadorClone();
+    }
+
+    function clonarSelecionados(){
+      const itensParaClonar = dados.filter(item => selecionadosClone.has(item.id));
+      if(itensParaClonar.length === 0){
+        alert("Selecione pelo menos um item para clonar.");
+        return;
+      }
+      // Por padrão os clones vão para o PRÓXIMO MÊS (mesmo dia, +1 mês).
+      // Se o usuário preencher "Nova data dos clones", ela tem prioridade.
+      const novaData = document.getElementById("dataClone").value;
+      const mensagemData = novaData
+        ? "\nNova data dos clones: " + formatarDataBR(novaData)
+        : "\nOs clones irão para o próximo mês (mesmo dia, +1 mês).";
+      if(!confirm("Clonar " + itensParaClonar.length + " item(ns)?" + mensagemData)){
+        return;
+      }
+
+      const clones = itensParaClonar.map(item => ({
+        id: gerarId(),
+        data: novaData
+          ? novaData
+          : (item.data ? adicionarMesesData(item.data, 1) : item.data),
+        descricao: item.descricao,
+        valor: Number(item.valor),
+        tipo: item.tipo,
+        // Ao clonar uma despesa, ela volta como não paga.
+        pago:false,
+        recorrente:false,
+        recorrenciaId:"",
+        recorrenciaParcela:0,
+        recorrenciaTotal:0
+      }));
+
+      dados.push(...clones);
+      salvar();
+      const quantidade = clones.length;
+      cancelar(false);
+      atualizarTabela();
+      alert(quantidade + " item(ns) clonado(s) para o próximo mês com sucesso!");
+    }
+
+    function obterListaFiltrada(){
+      let lista = [...dados];
+      const filtroMes = document.getElementById("filtroMesAno").value;
+      const pesquisa = document.getElementById("pesquisa").value.trim().toLowerCase();
+
+      if(filtroMes){
+        lista = lista.filter(item => item.data.startsWith(filtroMes));
+      }
+      if(filtroTipo){
+        lista = lista.filter(item => item.tipo === filtroTipo);
+      }
+      if(filtroStatus === "pago"){
+        lista = lista.filter(item => item.tipo === "saida" && item.pago);
+      }
+      if(filtroStatus === "pendente"){
+        lista = lista.filter(item => item.tipo === "saida" && !item.pago);
+      }
+      if(pesquisa){
+        lista = lista.filter(item => {
+          const descricao = item.descricao.toLowerCase();
+          const valorPonto = String(item.valor);
+          const valorVirgula = String(item.valor).replace(".", ",");
+          const tipoTexto = item.tipo === "entrada" ? "entrada" : "saída";
+          return descricao.includes(pesquisa)
+            || valorPonto.includes(pesquisa)
+            || valorVirgula.includes(pesquisa)
+            || tipoTexto.includes(pesquisa);
+        });
+      }
+
+      if(ordenacaoColuna){
+        lista.sort((a, b) => {
+          let A = a[ordenacaoColuna];
+          let B = b[ordenacaoColuna];
+          if(ordenacaoColuna === "data"){ A = new Date(A); B = new Date(B); }
+          if(ordenacaoColuna === "valor"){ A = Number(A); B = Number(B); }
+          if(A === B){ return 0; }
+          if(ordenacaoDirecao === "asc"){ return A > B ? 1 : -1; }
+          return A < B ? 1 : -1;
+        });
+      }
+
+      return lista;
+    }
+
+    function estaEmModoMobile(){
+      return window.matchMedia("(max-width:700px)").matches;
+    }
+
+    function calcularMetricas(lista){
+      let totalEntradas = 0;
+      let totalSaidas = 0;
+      let totalPendentes = 0;
+      let totalPagas = 0;
+      let maiorDespesa = null;
+      lista.forEach(item => {
+        const valorItem = Number(item.valor) || 0;
+        if(item.tipo === "entrada"){
+          totalEntradas += valorItem;
+        }else{
+          totalSaidas += valorItem;
+          if(item.pago){ totalPagas += valorItem; }
+          else{ totalPendentes += valorItem; }
+          if(!maiorDespesa || valorItem > Number(maiorDespesa.valor || 0)){
+            maiorDespesa = item;
+          }
+        }
+      });
+      return { totalEntradas, totalSaidas, totalPendentes, totalPagas, maiorDespesa };
+    }
+
+    function criarLinhaMobileSecao(tabela, titulo){
+      const row = document.createElement("tr");
+      row.className = "mobile-section";
+      row.innerHTML = `<td colspan="7">${titulo}</td>`;
+      tabela.appendChild(row);
+    }
+
+    function criarLinhaMobileCabecalho(tabela){
+      const row = document.createElement("tr");
+      row.className = "mobile-subheader";
+      row.innerHTML = `
+        <td colspan="7">
+          <span class="mobile-select"></span>
+          <span style="text-align:center">✔️</span>
+          <span>Item</span>
+          <span>Valor</span>
+          <span class="mobile-head-acoes"></span>
+        </td>
+      `;
+      tabela.appendChild(row);
+    }
+
+    function criarLinhaMobileItem(tabela, item, indexOriginal){
+      if(indexOriginal < 0){ return; }
+      const row = document.createElement("tr");
+      row.className = "mobile-lancamento";
+      const tipoClasse = item.tipo === "saida" ? "tipo-saida" : "tipo-entrada";
+      const statusVenc = obterStatusVencimento(item);
+      const classeVenc = statusVenc ? " "+statusVenc : "";
+      const dataTexto = formatarDataBR(item.data);
+      const descricao = escapeHTML(item.descricao);
+      const infoRecorrencia = item.recorrente
+        ? `<span title="Lançamento recorrente ${item.recorrenciaParcela || ""}/${item.recorrenciaTotal || ""}">🔁</span>`
+        : "";
+      const statusTexto = item.tipo === "saida"
+        ? `<small>${item.pago ? "pago" : "pendente"}${statusVenc ? " • "+ (statusVenc==="vencida"?"🚨 vencida": statusVenc==="vence-hoje"?"⚠️ hoje" : "⏰ "+diffDias(item.data)+"d") : ""}</small>`
+        : "";
+      const dataDetalhe = `<small>${dataTexto}</small>`;
+
+      const statusPagoHTML = item.tipo === "saida"
+        ? `<div class="mobile-pago-check"><button class="${item.pago ? "btn-pago" : "btn-nao-pago"}" onclick="togglePago(${indexOriginal})" title="${item.pago ? "Pago - clique para marcar pendente" : "Pendente - clique para marcar como pago"}">${item.pago ? "✔" : "✖"}</button></div>`
+        : `<div class="mobile-pago-check"><span style="color:#cbd5e1;font-size:14px">-</span></div>`;
+
+      row.innerHTML = `
+        <td colspan="7" class="mobile-list-cell">
+          <div class="mobile-item-row ${tipoClasse}${classeVenc}">
+            <div class="mobile-select">
+              <input
+                type="checkbox"
+                class="check-clone"
+                value="${escapeAttribute(item.id)}"
+                ${selecionadosClone.has(item.id) ? "checked" : ""}
+                onchange="alternarSelecionado(this.value, this.checked)"
+                title="Selecionar para clonar"
+              >
+            </div>
+            ${statusPagoHTML}
+            <div class="mobile-item-info">
+              <strong>${descricao}${infoRecorrencia}</strong>
+              ${dataDetalhe}
+            </div>
+            <div class="mobile-item-valor">
+              <strong>${formatarMoeda(item.valor)}</strong>
+              ${statusTexto}
+            </div>
+            <div class="mobile-item-acoes">
+              <button class="btn-copiar" onclick="copiar(${indexOriginal})" title="Copiar">📋</button>
+              <button class="btn-editar" onclick="editar(${indexOriginal})" title="Editar">✏️</button>
+              <button class="btn-excluir" onclick="remover(${indexOriginal})" title="Excluir">🗑️</button>
+            </div>
+          </div>
+        </td>
+      `;
+      tabela.appendChild(row);
+    }
+
+    function atualizarTabelaMobile(lista){
+      const tabela = document.getElementById("tabela");
+      tabela.innerHTML = "";
+      const metricas = calcularMetricas(lista);
+      atualizarCardsFiltro();
+
+      if(lista.length === 0){
+        const row = document.createElement("tr");
+        row.innerHTML = `<td colspan="7" class="vazio">Nenhum registro encontrado.</td>`;
+        tabela.appendChild(row);
+        atualizarResumo(metricas.totalEntradas, metricas.totalSaidas, metricas.totalPendentes);
+        atualizarDashboard(lista, metricas.totalPagas, metricas.totalPendentes, metricas.maiorDespesa);
+        atualizarContadorClone();
+        return;
+      }
+
+      // Mapa id -> índice real em "dados", calculado uma única vez.
+      const indicePorId = new Map();
+      dados.forEach((registro, idx) => {
+        if(!indicePorId.has(registro.id)){
+          indicePorId.set(registro.id, idx);
+        }
+      });
+
+      const grupos = [
+        { tipo:"entrada", titulo:"Receita" },
+        { tipo:"saida", titulo:"Despesas" }
+      ];
+
+      grupos.forEach(grupo => {
+        const itens = lista.filter(item => item.tipo === grupo.tipo);
+        if(itens.length === 0){ return; }
+        criarLinhaMobileSecao(tabela, grupo.titulo);
+        criarLinhaMobileCabecalho(tabela);
+        itens.forEach(item => {
+          const indexOriginal = indicePorId.has(item.id) ? indicePorId.get(item.id) : dados.indexOf(item);
+          criarLinhaMobileItem(tabela, item, indexOriginal);
+        });
+      });
+
+      atualizarResumo(metricas.totalEntradas, metricas.totalSaidas, metricas.totalPendentes);
+      atualizarDashboard(lista, metricas.totalPagas, metricas.totalPendentes, metricas.maiorDespesa);
+      atualizarContadorClone();
+      verificarNotificacoes();
+    }
+
+    function atualizarTabela(){
+      atualizarLabelMes();
+      const tabela = document.getElementById("tabela");
+      tabela.innerHTML = "";
+      const lista = obterListaFiltrada();
+
+      if(estaEmModoMobile()){
+        atualizarTabelaMobile(lista);
+        return;
+      }
+
+      let totalEntradas = 0;
+      let totalSaidas = 0;
+      let totalPendentes = 0;
+      let totalPagas = 0;
+      let maiorDespesa = null;
+
+      atualizarCardsFiltro();
+
+      if(lista.length === 0){
+        const row = document.createElement("tr");
+        row.innerHTML = `<td colspan="7" class="vazio" data-label="">Nenhum registro encontrado.</td>`;
+        tabela.appendChild(row);
+        atualizarResumo(totalEntradas, totalSaidas, totalPendentes);
+        atualizarDashboard(lista, totalPagas, totalPendentes, maiorDespesa);
+        atualizarContadorClone();
+        return;
+      }
+
+      // Mapa id -> índice real em "dados", calculado uma única vez.
+      const indicePorId = new Map();
+      dados.forEach((registro, idx) => {
+        if(!indicePorId.has(registro.id)){
+          indicePorId.set(registro.id, idx);
+        }
+      });
+
+      lista.forEach(item => {
+        const indexOriginal = indicePorId.has(item.id) ? indicePorId.get(item.id) : dados.indexOf(item);
+        if(indexOriginal < 0){ return; }
+
+        const row = document.createElement("tr");
+        const statusVencDesktop = obterStatusVencimento(item);
+        if(statusVencDesktop) row.classList.add(statusVencDesktop);
+        const tipoTexto = item.tipo === "entrada" ? "Entrada" : "Saída";
+        const valorItem = Number(item.valor) || 0;
+        const infoRecorrencia = item.recorrente
+          ? `<span title="Lançamento recorrente ${item.recorrenciaParcela || ""}/${item.recorrenciaTotal || ""}">🔁</span>`
+          : "";
+        const status = item.tipo === "saida"
+          ? `<button class="${item.pago ? "btn-pago" : "btn-nao-pago"}" onclick="togglePago(${indexOriginal})" title="Clique para alternar pago/não pago">${item.pago ? "✔" : "✖"}</button>`
+          : "-";
+
+        row.innerHTML = `
+          <td class="col-selecao" data-label="Selecionar">
+            <input
+              type="checkbox"
+              class="check-clone"
+              value="${escapeAttribute(item.id)}"
+              ${selecionadosClone.has(item.id) ? "checked" : ""}
+              onchange="alternarSelecionado(this.value, this.checked)"
+              title="Selecionar para clonar"
+            >
+          </td>
+          <td data-label="Status">${status}</td>
+          <td data-label="Data">${formatarDataBR(item.data)}</td>
+          <td class="col-descricao" data-label="Descrição">${escapeHTML(item.descricao)}${infoRecorrencia}</td>
+          <td class="${item.tipo}" data-label="Tipo">${tipoTexto}</td>
+          <td data-label="Valor">${formatarMoeda(item.valor)}</td>
+          <td class="acoes" data-label="Ação">
+            <button class="btn-copiar" onclick="copiar(${indexOriginal})" title="Copiar para o formulário">📋</button>
+            <button class="btn-editar" onclick="editar(${indexOriginal})" title="Editar">✏️</button>
+            <button class="btn-excluir" onclick="remover(${indexOriginal})" title="Excluir">🗑️</button>
+          </td>
+        `;
+        tabela.appendChild(row);
+
+        if(item.tipo === "entrada"){
+          totalEntradas += valorItem;
+        }else{
+          totalSaidas += valorItem;
+          if(item.pago){ totalPagas += valorItem; }
+          else{ totalPendentes += valorItem; }
+          if(!maiorDespesa || valorItem > Number(maiorDespesa.valor || 0)){
+            maiorDespesa = item;
+          }
+        }
+      });
+
+      atualizarResumo(totalEntradas, totalSaidas, totalPendentes);
+      atualizarDashboard(lista, totalPagas, totalPendentes, maiorDespesa);
+      atualizarContadorClone();
+      // Atualiza notificações de vencimento sempre que a tabela é renderizada
+      verificarNotificacoes();
+    }
+
+    function atualizarResumo(totalEntradas, totalSaidas, totalPendentes){
+      const saldo = totalEntradas - totalSaidas;
+      const saldoEl = document.getElementById("saldo");
+      document.getElementById("totalEntradas").innerText = formatarMoeda(totalEntradas);
+      document.getElementById("totalSaidas").innerText = formatarMoeda(totalSaidas);
+      document.getElementById("totalPendentes").innerText = formatarMoeda(totalPendentes);
+      saldoEl.innerText = formatarMoeda(saldo);
+      saldoEl.classList.toggle("saldo-positivo", saldo >= 0);
+      saldoEl.classList.toggle("saldo-negativo", saldo < 0);
+    }
+
+    function atualizarDashboard(lista, totalPagas, totalPendentes, maiorDespesa){
+      const maiorDespesaTexto = maiorDespesa
+        ? maiorDespesa.descricao + " - " + formatarMoeda(maiorDespesa.valor)
+        : "-";
+      document.getElementById("dashRegistros").innerText = lista.length;
+      document.getElementById("dashPago").innerText = formatarMoeda(totalPagas);
+      document.getElementById("dashPendente").innerText = formatarMoeda(totalPendentes);
+      document.getElementById("dashMaiorDespesa").innerText = maiorDespesaTexto;
+    }
+
+    let modoMobileAtual = estaEmModoMobile();
+    window.addEventListener("resize", function(){
+      const novoModoMobile = estaEmModoMobile();
+      if(novoModoMobile !== modoMobileAtual){
+        modoMobileAtual = novoModoMobile;
+        atualizarTabela();
+      }
+    });
+
+    inicializarFirebase(true);
+    carregarConfigNotificacao();
+    atualizarTabela();
+    verificarNotificacoes();
+    iniciarAgendamentoNotificacao();
+    // Verifica vencimentos a cada 1 hora enquanto app aberto (fallback)
+    setInterval(()=>{ if(document.getElementById("appContainer").style.display !== "none") verificarNotificacoes(); }, 3600000);
+    // Atualiza texto de próximo horário no painel
+    setInterval(()=>{
+      const txt = document.getElementById("txtProximoHorario");
+      if(txt) txt.innerText = "próx: "+obterProximoHorarioNotificacaoTexto();
+    }, 30000);
+
+    // ===== PWA - Instalação e Service Worker =====
+    let deferredPrompt = null;
+    const btnInstalar = document.getElementById("btnInstalarPWA");
+
+    window.addEventListener("beforeinstallprompt", (e) => {
+      console.log("[PWA] beforeinstallprompt");
+      e.preventDefault();
+      deferredPrompt = e;
+      if(btnInstalar) btnInstalar.classList.add("mostrar");
+    });
+
+    async function instalarPWA(){
+      if(!deferredPrompt){
+        // Se já está instalado ou navegador não suporta prompt, mostra instruções
+        if(window.matchMedia("(display-mode: standalone)").matches){
+          alert("App já está instalado! ✅\nProcure por 'Controle Financeiro' no seu menu iniciar ou tela inicial.");
+        } else {
+          alert("Para instalar:\n\nPC - Chrome: Clique nos 3 pontinhos no canto superior direito > Instalar app / Salvar e compartilhar > Instalar\n\nCelular - Chrome: 3 pontinhos > Adicionar à tela inicial\n\nOu: Barra de endereço > ícone de instalar (computador com +)");
+        }
+        return;
+      }
+      deferredPrompt.prompt();
+      const { outcome } = await deferredPrompt.userChoice;
+      console.log("[PWA] userChoice", outcome);
+      if(outcome === "accepted"){
+        if(btnInstalar) btnInstalar.classList.remove("mostrar");
+      }
+      deferredPrompt = null;
+    }
+
+    window.addEventListener("appinstalled", () => {
+      console.log("[PWA] App instalado");
+      if(btnInstalar) btnInstalar.classList.remove("mostrar");
+      deferredPrompt = null;
+      alert("🎉 App instalado com sucesso! Agora você pode abrir direto da área de trabalho e receber notificações mesmo com o navegador fechado.");
+    });
+
+    // Registro do Service Worker
+    if("serviceWorker" in navigator){
+      window.addEventListener("load", async () => {
+        try{
+          const reg = await navigator.serviceWorker.register("./service-worker.js");
+          console.log("[PWA] SW registrado", reg.scope);
+          
+          // Verifica atualizações
+          reg.addEventListener("updatefound", () => {
+            const newWorker = reg.installing;
+            newWorker.addEventListener("statechange", () => {
+              if(newWorker.state === "installed" && navigator.serviceWorker.controller){
+                // Nova versão disponível
+                if(confirm("Nova versão do app disponível! Deseja atualizar?")){
+                  newWorker.postMessage({ type: "SKIP_WAITING" });
+                  window.location.reload();
+                }
+              }
+            });
+          });
+
+          // Escuta mensagens do SW
+          navigator.serviceWorker.addEventListener("message", (event) => {
+            if(event.data?.type === "FILTRAR_PENDENTES"){
+              filtrarStatusRapido("pendente");
+            }
+            if(event.data?.type === "VERIFICAR_VENCIMENTOS"){
+              verificarNotificacoes(true);
+            }
+          });
+
+          // Solicita permissão para notificações periódicas se disponível
+          if("periodicSync" in reg){
+            try{
+              const status = await navigator.permissions.query({ name: "periodic-background-sync" });
+              if(status.state === "granted"){
+                await reg.periodicSync.register("verificar-vencimentos", { minInterval: 12 * 60 * 60 * 1000 });
+                console.log("[PWA] Periodic sync registrado");
+              }
+            }catch(e){ console.warn("[PWA] Periodic sync não suportado", e); }
+          }
+
+        }catch(err){
+          console.error("[PWA] Falha ao registrar SW", err);
+        }
+      });
+    }
+
+    // Função para mostrar notificação via Service Worker (mais confiável no PC)
+    function mostrarNotificacaoViaSW(titulo, corpo){
+      if("serviceWorker" in navigator && navigator.serviceWorker.controller){
+        navigator.serviceWorker.controller.postMessage({
+          type: "SHOW_NOTIFICATION",
+          title: titulo,
+          body: corpo,
+          url: "./controle-financeiro.html"
+        });
+      } else {
+        enviarNotificacaoBrowser(titulo, corpo);
+      }
+    }
+
+    // Sobrescreve enviarNotificacaoBrowser para usar SW quando possível
+    const enviarNotificacaoBrowserOriginal = enviarNotificacaoBrowser;
+    enviarNotificacaoBrowser = function(titulo, corpo){
+      if("serviceWorker" in navigator && navigator.serviceWorker.controller && Notification.permission === "granted"){
+        mostrarNotificacaoViaSW(titulo, corpo);
+      } else {
+        enviarNotificacaoBrowserOriginal(titulo, corpo);
+      }
+    };
+
+    // Detecta se abriu via atalho de PWA (shortcuts)
+    window.addEventListener("load", ()=>{
+      const params = new URLSearchParams(location.search);
+      if(params.get("acao")==="adicionar"){
+        setTimeout(()=>{ abrirFormularioMobile(); document.getElementById("descricao")?.focus(); }, 500);
+      }
+      if(params.get("acao")==="vencimentos" || params.get("filtro")==="pendente"){
+        setTimeout(()=>{ filtrarStatusRapido("pendente"); abrirPainelNotificacoes(); }, 600);
+      }
+    });
+
+    document.getElementById("loginUsuario").focus();
+  </script>
+</body>
+</html>
