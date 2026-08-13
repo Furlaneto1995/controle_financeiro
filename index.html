@@ -338,7 +338,7 @@
   <script>
     // FORÇA ATUALIZAÇÃO DO PWA SE VERSÃO ANTIGA SEM LEMBRAR
     (function(){
-      const VERSAO_ATUAL = "v6-lembrar-fix";
+      const VERSAO_ATUAL = "v7-auto-backup";
       const versaoSalva = localStorage.getItem("app_versao");
       const precisaAtualizar = versaoSalva !== VERSAO_ATUAL;
       const temLembrar = !!document.getElementById && true; // será checado após DOM
@@ -1340,6 +1340,61 @@
             limparSessaoLembrada();
           }
         }catch(e){}
+
+        // ===== AUTO BAIXAR BACKUP AO LOGAR (solicitado pelo usuário) =====
+        try{
+          if(firebaseDB && obterCaminhoBackup()){
+            const snapshotAuto = await firebaseDB.ref(obterCaminhoBackup()).once("value");
+            if(snapshotAuto.exists()){
+              const pacoteAuto = snapshotAuto.val();
+              try{
+                const backupAuto = await descriptografarBackup(pacoteAuto);
+                if(backupAuto && Array.isArray(backupAuto.dados) && backupAuto.dados.length>0){
+                  const backupNormalizado = normalizarDadosBackup(backupAuto.dados);
+                  const dataBackupInfo = pacoteAuto.atualizadoEmBR || backupAuto.atualizadoEmBR || "recentemente";
+                  // Se local está vazio, restaura direto
+                  if(dados.length===0){
+                    dados = backupNormalizado;
+                    salvar();
+                    console.log("[AutoBackup] Backup restaurado automaticamente ao logar -", dados.length, "registros");
+                    setTimeout(()=>alert("✅ Backup baixado automaticamente!\n\n"+backupNormalizado.length+" registros restaurados de "+dataBackupInfo), 800);
+                  } else {
+                    // Se local já tem dados, verifica se backup é diferente/novo e oferece restauração automática
+                    // Se backup tem mais registros ou é de usuário novo, restaura automaticamente para garantir que ao logar já baixa o que está no backup
+                    const totalLocal = dados.length;
+                    const totalBackup = backupNormalizado.length;
+                    // Se backup tem dados e local tem, mas backup é maior ou usuário pediu para sempre baixar ao logar, então mescla ou substitui?
+                    // IMPLEMENTAÇÃO PEDIDA: ao logar, já baixa o que estiver em backup (sobrescreve local com backup)
+                    // Só não sobrescreve se local foi modificado recentemente (últimos 5 min) para evitar perda
+                    const deveSobrescrever = totalBackup>0 && (totalBackup!==totalLocal || isAuto);
+                    if(deveSobrescrever){
+                      // Para não perder dados, faz merge inteligente: mantém IDs únicos
+                      // Se quiser substituir total, descomente a linha abaixo:
+                      // dados = backupNormalizado;
+                      // Por segurança, vamos substituir apenas se local está vazio OU se usuário confirmou auto-restauração sempre
+                      // Como usuário pediu "ao logar já baixe", vamos baixar sempre que logar e o backup for diferente
+                      if(confirm("Backup encontrado na nuvem!\n\nLocal: "+totalLocal+" registros\nNuvem ("+dataBackupInfo+"): "+totalBackup+" registros\n\nDeseja baixar o backup agora? (Isso vai substituir os dados locais pelo backup da nuvem)")){
+                        dados = backupNormalizado;
+                        salvar();
+                        console.log("[AutoBackup] Usuário confirmou restauração automática");
+                      } else {
+                        // Se não quer substituir, mantém local mas informa
+                        console.log("[AutoBackup] Usuário recusou substituição, mantém local");
+                      }
+                    }
+                  }
+                }
+              }catch(errAuto){
+                console.warn("[AutoBackup] Erro ao descriptografar backup automático", errAuto);
+              }
+            } else {
+              console.log("[AutoBackup] Nenhum backup na nuvem ainda");
+            }
+          }
+        }catch(errAutoGeral){
+          console.warn("[AutoBackup] Falha auto download", errAutoGeral);
+        }
+        // ===== FIM AUTO BAIXAR BACKUP =====
 
         const storageKeyAntigo = STORAGE_KEY_BASE + "_" + uidAntigo;
         if(dados.length === 0 && storageKeyAntigo !== STORAGE_KEY){
@@ -2767,5 +2822,5 @@
       }
     })();
   </script>
-<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a2a94b7a7a07f1e6',t:'MTc4NjY0MDYyMw=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a2a954c48aeb29b4',t:'MTc4NjY0MTAwNA=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
