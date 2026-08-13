@@ -320,8 +320,10 @@
       <p>Entre com usuário e senha</p>
       <input type="text" id="loginUsuario" placeholder="Usuário" autocomplete="username">
       <input type="password" id="loginSenha" placeholder="Senha" autocomplete="current-password" onkeydown="if(event.key==='Enter') entrarApp()">
+      <label style="display:flex;align-items:center;gap:8px;margin:8px 0 10px;text-align:left;font-size:13px;color:#334155;cursor:pointer;font-weight:600"><input type="checkbox" id="lembrarMe" checked style="width:18px;height:18px"> Lembrar de mim neste aparelho</label>
       <button onclick="entrarApp()">Entrar</button>
-      <small>Use sempre o mesmo usuário e senha para conseguir baixar/decriptar seu backup.</small>
+      <button onclick="entrarModoLocal()" style="background:#f8fafc;color:#334155;border:1px solid #e2e8f0;margin-top:4px">📱 Continuar sem senha (só neste aparelho)</button>
+      <small>Use sempre o mesmo usuário e senha para conseguir baixar/decriptar seu backup.<br><span style="color:#16a34a">✔️ Com "Lembrar de mim" você só digita a senha na primeira vez.</span></small>
     </div>
   </div>
   <div class="container" id="appContainer" style="display:none">
@@ -1025,7 +1027,97 @@
       return bytesParaBase64(bits) === login.senhaHash;
     }
 
-    async function entrarApp(){
+    // ===== LEMBRAR DE MIM + MODO LOCAL SEM SENHA =====
+    const SESSAO_LEMBRADA_KEY = STORAGE_KEY_BASE + "_sessao_lembrada";
+    const MODO_LOCAL_UID = "local_aparelho";
+
+    function salvarSessaoLembrada(usuario, senha){
+      try{
+        const dadosSessao = {
+          usuario: usuario,
+          // NÃO salva senha em texto puro se puder evitar, mas para auto-descriptografia do backup precisamos dela.
+          // Salvamos ofuscada em base64 (não é criptografia forte, apenas para não ficar visível à primeira vista no localStorage)
+          senhaB64: btoa(unescape(encodeURIComponent(senha))),
+          uid: gerarUidLogin(usuario),
+          salvoEm: new Date().toISOString()
+        };
+        localStorage.setItem(SESSAO_LEMBRADA_KEY, JSON.stringify(dadosSessao));
+        console.log("[Sessao] Sessão lembrada salva");
+      }catch(e){ console.warn("Erro salvar sessão", e); }
+    }
+
+    function carregarSessaoLembrada(){
+      try{
+        const raw = localStorage.getItem(SESSAO_LEMBRADA_KEY);
+        if(!raw) return null;
+        const obj = JSON.parse(raw);
+        if(!obj.usuario || !obj.senhaB64) return null;
+        const senha = decodeURIComponent(escape(atob(obj.senhaB64)));
+        return { usuario: obj.usuario, senha, uid: obj.uid };
+      }catch(e){ return null; }
+    }
+
+    function limparSessaoLembrada(){
+      try{ localStorage.removeItem(SESSAO_LEMBRADA_KEY); }catch(e){}
+    }
+
+    function obterDeviceIdLocal(){
+      let id = localStorage.getItem(STORAGE_KEY_BASE + "_deviceId");
+      if(!id){
+        id = "dev_" + Math.random().toString(36).slice(2,12) + Date.now().toString(36);
+        localStorage.setItem(STORAGE_KEY_BASE + "_deviceId", id);
+      }
+      return id;
+    }
+
+    async function entrarModoLocal(){
+      if(!confirm("Entrar sem senha?\n\nSeus dados ficarão SALVOS SOMENTE NESTE APARELHO (celular/PC) e não terão backup na nuvem.\n\nVocê poderá depois criar um usuário com senha e migrar esses dados para o backup.\n\nContinuar?")){
+        return;
+      }
+      const deviceId = obterDeviceIdLocal();
+      const uidLocal = MODO_LOCAL_UID + "_" + deviceId.slice(0,12);
+      usuarioAtual = { uid: uidLocal, usuario: "Meu Aparelho", modoLocal: true };
+      senhaBackupAtual = "";
+      STORAGE_KEY = STORAGE_KEY_BASE + "_" + uidLocal;
+      dados = carregarDados();
+      limparFiltros();
+      document.getElementById("loginScreen").style.display = "none";
+      document.getElementById("appContainer").style.display = "flex";
+      document.getElementById("usuarioLogado").innerText = "📱 Modo local - " + STORAGE_KEY_BASE;
+      carregarConfigNotificacao();
+      iniciarAgendamentoNotificacao();
+      atualizarTabela();
+      alert("Modo local ativado! 📱\n\nSeus dados ficam só neste aparelho. Para fazer backup na nuvem depois, vá no menu ☰ > 🔑 Alterar senha / Criar backup, crie um usuário com senha e use Salvar backup.");
+    }
+
+    async function tentarLoginAutomatico(){
+      const sessao = carregarSessaoLembrada();
+      if(!sessao) return false;
+      console.log("[Sessao] Tentando login automático para", sessao.usuario);
+      const inputUsuario = document.getElementById("loginUsuario");
+      const inputSenha = document.getElementById("loginSenha");
+      const checkLembrar = document.getElementById("lembrarMe");
+      if(inputUsuario) inputUsuario.value = sessao.usuario;
+      if(inputSenha) inputSenha.value = sessao.senha;
+      if(checkLembrar) checkLembrar.checked = true;
+      // Mostra feedback
+      const loginCard = document.querySelector(".login-card");
+      if(loginCard){
+        const p = loginCard.querySelector("p");
+        if(p) p.innerText = "🔄 Entrando automaticamente como " + sessao.usuario + "...";
+      }
+      try{
+        // pequena espera para Firebase inicializar
+        await new Promise(r=>setTimeout(r, 400));
+        await entrarApp(true);
+        return true;
+      }catch(e){
+        console.warn("Falha login auto", e);
+        return false;
+      }
+    }
+
+    async function entrarApp(isAuto = false){
       const usuario = document.getElementById("loginUsuario").value.trim();
       const senha = document.getElementById("loginSenha").value;
       if(!usuario || !senha){
@@ -1089,10 +1181,20 @@
           }
         }
 
-        usuarioAtual = { uid, usuario };
+        usuarioAtual = { uid, usuario, modoLocal: false };
         senhaBackupAtual = senha;
         STORAGE_KEY = STORAGE_KEY_BASE + "_" + usuarioAtual.uid;
         dados = carregarDados();
+        // Salvar sessão lembrada se checkbox marcado
+        try{
+          const lembrarCheck = document.getElementById("lembrarMe");
+          const deveLembrar = isAuto ? true : (lembrarCheck ? lembrarCheck.checked : false);
+          if(deveLembrar){
+            salvarSessaoLembrada(usuario, senha);
+          } else {
+            limparSessaoLembrada();
+          }
+        }catch(e){}
 
         const storageKeyAntigo = STORAGE_KEY_BASE + "_" + uidAntigo;
         if(dados.length === 0 && storageKeyAntigo !== STORAGE_KEY){
@@ -1141,7 +1243,51 @@
       }
     }
 
-    function sairApp(){
+        function sairApp(){
+      const sessao = carregarSessaoLembrada();
+      let msg = "Sair do controle financeiro?";
+      if(sessao){
+        msg += "\n\nDeseja também esquecer a senha salva neste aparelho?\n(Se escolher NÃO, da próxima vez entra automático)";
+      }
+      if(!confirm(msg)){
+        return;
+      }
+      const esquecer = sessao ? confirm("Esquecer login salvo?\n\nClique OK para apagar o 'Lembrar de mim' e precisar digitar senha de novo.\nCancelar = continua lembrando.") : true;
+      if(esquecer){
+        limparSessaoLembrada();
+        document.getElementById("loginUsuario").value = "";
+        document.getElementById("loginSenha").value = "";
+        const check = document.getElementById("lembrarMe");
+        if(check) check.checked = false;
+      }
+      usuarioAtual = null;
+      senhaBackupAtual = "";
+      STORAGE_KEY = STORAGE_KEY_BASE;
+      dados = [];
+      cancelar(false);
+      limparFiltros();
+      document.getElementById("appContainer").style.display = "none";
+      document.getElementById("loginScreen").style.display = "flex";
+      const p = document.querySelector(".login-card p");
+      if(p) p.innerText = "Entre com usuário e senha";
+      document.getElementById("loginUsuario").focus();
+    }
+
+    function sairAppLocal(){
+      if(!confirm("Sair do modo local? Seus dados locais continuam salvos neste aparelho.")){
+        return;
+      }
+      usuarioAtual = null;
+      senhaBackupAtual = "";
+      STORAGE_KEY = STORAGE_KEY_BASE;
+      dados = [];
+      cancelar(false);
+      limparFiltros();
+      document.getElementById("appContainer").style.display = "none";
+      document.getElementById("loginScreen").style.display = "flex";
+      document.getElementById("loginUsuario").focus();
+    }
+    function sairApp_ORIG(){
       if(!confirm("Sair do controle financeiro?")){
         return;
       }
@@ -1374,7 +1520,14 @@
     function menuSalvarBackup(){ fecharMenu(); salvarBackupFirebase(); }
     function menuBaixarBackup(){ fecharMenu(); baixarBackupFirebase(); }
     function menuAlterarSenha(){ fecharMenu(); trocarSenhaApp(); }
-    function menuSair(){ fecharMenu(); sairApp(); }
+    function menuSair(){ 
+      fecharMenu(); 
+      if(usuarioAtual && usuarioAtual.modoLocal){
+        sairAppLocal();
+      } else {
+        sairApp();
+      }
+    }
 
     document.addEventListener("click", function(event){
       const menuWrapper = document.querySelector(".menu-wrapper");
@@ -2427,7 +2580,18 @@
       }
     });
 
-    document.getElementById("loginUsuario").focus();
+    // Tenta login automático se tem "Lembrar de mim"
+    (async ()=>{
+      const sessao = carregarSessaoLembrada();
+      if(sessao){
+        const ok = await tentarLoginAutomatico();
+        if(!ok){
+          document.getElementById("loginUsuario").focus();
+        }
+      } else {
+        document.getElementById("loginUsuario").focus();
+      }
+    })();
   </script>
-<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a2a910e28f2d2570',t:'MTc4NjYzODIyMw=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a2a91764bf38a490',t:'MTc4NjYzODQ5MA=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
