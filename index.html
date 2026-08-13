@@ -314,6 +314,53 @@
   </style>
 </head>
 <body>
+  <script>
+    // FORÇA ATUALIZAÇÃO DO PWA SE VERSÃO ANTIGA SEM LEMBRAR
+    (function(){
+      const VERSAO_ATUAL = "v6-lembrar-fix";
+      const versaoSalva = localStorage.getItem("app_versao");
+      const precisaAtualizar = versaoSalva !== VERSAO_ATUAL;
+      const temLembrar = !!document.getElementById && true; // será checado após DOM
+      const isPWA = window.matchMedia("(display-mode: standalone)").matches || window.navigator.standalone;
+      
+      console.log("[PWA Update] Versão atual:", VERSAO_ATUAL, "Salva:", versaoSalva, "PWA:", isPWA);
+      
+      // Se está em PWA e versão antiga, força limpeza
+      if(precisaAtualizar && isPWA){
+        console.log("[PWA Update] Forçando limpeza por versão antiga");
+        if('serviceWorker' in navigator){
+          navigator.serviceWorker.getRegistrations().then(regs=>{
+            regs.forEach(r=>r.unregister());
+          });
+        }
+        if('caches' in window){
+          caches.keys().then(keys=>Promise.all(keys.map(k=>caches.delete(k))));
+        }
+      }
+      localStorage.setItem("app_versao", VERSAO_ATUAL);
+      
+      // Após carregar DOM, verifica se lembrar existe
+      window.addEventListener("DOMContentLoaded", ()=>{
+        setTimeout(()=>{
+          const temCheckbox = document.getElementById("lembrarMe");
+          const isPWA2 = window.matchMedia("(display-mode: standalone)").matches;
+          if(isPWA2 && !temCheckbox){
+            console.warn("[PWA] Versão antiga sem lembrar detectada, forçando reload");
+            document.body.innerHTML = '<div style="padding:20px;text-align:center;font-family:sans-serif"><h2>🔄 Atualizando app...</h2><p>Detectamos versão antiga instalada.</p><p>Estamos limpando cache e recarregando.</p><button onclick="localStorage.clear();if(\'serviceWorker\' in navigator){navigator.serviceWorker.getRegistrations().then(r=>r.forEach(reg=>reg.unregister()))} caches.keys().then(k=>Promise.all(k.map(c=>caches.delete(c)))).then(()=>location.reload(true))" style="padding:12px 20px;background:#3b82f6;color:white;border:none;border-radius:10px;font-weight:bold">Clique aqui para atualizar agora</button></div>';
+            setTimeout(()=>{
+              if('serviceWorker' in navigator){
+                navigator.serviceWorker.getRegistrations().then(regs=>{
+                  regs.forEach(r=>{ try{r.unregister()}catch(e){} });
+                });
+              }
+              caches.keys().then(keys=>{ keys.forEach(k=>caches.delete(k)); });
+              setTimeout(()=>location.reload(true), 2000);
+            }, 1000);
+          }
+        }, 800);
+      });
+    })();
+  </script>
   <div id="loginScreen" class="login-screen">
     <div class="login-card">
       <h2>💰 Controle Financeiro</h2>
@@ -2699,5 +2746,5 @@
       }
     })();
   </script>
-<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a2a9405ecc36c93d',t:'MTc4NjY0MDE2OA=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a2a947b84d3b6e30',t:'MTc4NjY0MDQ2OQ=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
