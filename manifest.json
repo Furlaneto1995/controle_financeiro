@@ -1,8 +1,8 @@
 {
-  "name": "Controle Financeiro",
+  "name": "Controle Financeiro v8",
   "short_name": "Financeiro",
   "description": "Controle financeiro pessoal com notificações de vencimento",
-  "start_url": "./controle-financeiro.html?v=7-auto-backup",
+  "start_url": "./controle-financeiro.html?v=8-auto-sync",
   "display": "standalone",
   "display_override": [
     "standalone",
@@ -89,5 +89,5 @@
       "auto"
     ]
   },
-  "version": "7.0"
+  "version": "8.0"
 }
