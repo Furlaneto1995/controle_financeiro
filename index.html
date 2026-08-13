@@ -338,7 +338,7 @@
   <script>
     // FORÇA ATUALIZAÇÃO DO PWA SE VERSÃO ANTIGA SEM LEMBRAR
     (function(){
-      const VERSAO_ATUAL = "v9.2";
+      const VERSAO_ATUAL = "v9.3";
       const versaoSalva = localStorage.getItem("app_versao");
       const precisaAtualizar = versaoSalva !== VERSAO_ATUAL;
       const temLembrar = !!document.getElementById && true; // será checado após DOM
@@ -383,7 +383,7 @@
     })();
   </script>
   <div id="loginScreen" class="login-screen">
-    <div class="login-card"><div style="position:absolute;top:10px;right:12px;font-size:10px;color:#64748b;background:#f1f5f9;padding:2px 6px;border-radius:6px">v9.2</div>
+    <div class="login-card"><div style="position:absolute;top:10px;right:12px;font-size:10px;color:#64748b;background:#f1f5f9;padding:2px 6px;border-radius:6px">v9.3</div>
       <h2>💰 Controle Financeiro</h2>
       <p>Entre com usuário e senha</p>
       <input type="text" id="loginUsuario" placeholder="Usuário" autocomplete="username">
@@ -714,32 +714,51 @@
 
 
     function testarNotificacaoAgora(){
-      console.log("[Teste] Permissão:", Notification.permission);
+      console.log("[Teste] Permissão:", Notification.permission, "SW controller:", !!navigator.serviceWorker.controller);
       if(!("Notification" in window)){
-        alert("❌ Seu navegador não suporta notificações");
+        alert("❌ Seu navegador não suporta notificações\nUse Chrome ou Edge");
         return;
       }
+      const enviarTesteDireto = (titulo, corpo)=>{
+        try{
+          // Teste DIRETO sem passar pelo Service Worker - funciona na hora
+          const n = new Notification(titulo, {
+            body: corpo,
+            icon: "./icon-192.png",
+            badge: "./icon-96.png",
+            tag: "teste-agora",
+            requireInteraction: false
+          });
+          n.onclick = ()=>{ window.focus(); n.close(); };
+          console.log("[Teste] Notification direta enviada");
+          return true;
+        }catch(e){
+          console.error("[Teste] Erro notification direta", e);
+          // Fallback via SW
+          try{ enviarNotificacaoBrowser(titulo, corpo); return true; }catch(e2){ return false; }
+        }
+      };
+
       if(Notification.permission === "default"){
         Notification.requestPermission().then(p=>{
+          console.log("[Teste] Nova permissão:", p);
           if(p==="granted"){
-            enviarNotificacaoBrowser("✅ Teste OK", "Notificações funcionando! Se fechou o app, esta veio mesmo fechado (se suportado).");
-            alert("Permissão concedida! Teste enviado. Verifique no canto da tela / central de notificações.");
+            enviarTesteDireto("✅ Teste OK - Permissão concedida", "Notificações funcionando! No PC veja canto inferior direito. No celular veja topo da tela.");
+            alert("✅ Permissão concedida! Teste enviado.\n\nPC: olhe canto inferior direito do Windows\nCelular: olhe barra de notificações no topo");
           } else {
-            alert("Permissão negada: "+p);
+            alert("❌ Permissão negada: "+p+"\n\nVá em Chrome > Configurações > Notificações > Permitir seu site");
           }
         });
       } else if(Notification.permission === "denied"){
-        alert("❌ Notificações bloqueadas!\nVá em Chrome > Configurações > Notificações > Seu site > Permitir\nNo celular: Configurações do site > Notificações > Permitir");
+        alert("❌ Notificações BLOQUEADAS!\n\nPC: Chrome > ⋮ > Configurações > Privacidade > Configurações do site > Notificações > Seu github.io > Permitir\n\nCelular: Chrome > ⋮ > Configurações > Notificações > Permitir + Configurações do site > Seu site > Notificações > Permitir\n\nOu: Android > Configurações > Apps > Chrome > Notificações > Permitir");
       } else {
-        // granted
+        // granted - manda teste na hora
         const vencs = obterVencimentosProximos();
-        if(vencs.length===0){
-          // Teste genérico
-          enviarNotificacaoBrowser("🔔 Teste - Controle Financeiro", "Se você está vendo este pop-up no PC/celular, as notificações estão funcionando! Total de contas hoje: 0 (teste)");
-          alert("✅ Teste enviado! Se não apareceu pop-up no PC, verifique canto inferior direito do Windows. No celular verifique barra de notificações.");
+        const ok = enviarTesteDireto("🔔 Teste - v9.3", vencs.length>0 ? "Funcionando! Você tem "+vencs.length+" conta(s) a vencer hoje" : "Se você está vendo este pop-up, as notificações estão funcionando! (teste sem contas)");
+        if(ok){
+          alert("✅ Teste enviado direto!\n\nSe não apareceu:\n- PC: Win+N para abrir central de notificações\n- Celular: deslize de cima para baixo\n- Verifique se Chrome tem permissão nas configurações do Android");
         } else {
-          verificarNotificacoes(true);
-          alert("✅ Teste com suas contas reais enviado! "+vencs.length+" conta(s)");
+          alert("❌ Falha ao enviar. Tente recarregar a página e permitir de novo.");
         }
       }
     }
@@ -2859,7 +2878,7 @@
             if(!temCheckbox){
               document.body.innerHTML = '<div style="padding:30px;text-align:center;font-family:sans-serif"><h2>🔄 Atualizando para v9...</h2><p>Detectamos app antigo.</p><p>Limpando cache...</p></div>';
               caches.keys().then(ks=>Promise.all(ks.map(k=>caches.delete(k)))).then(()=>{
-                localStorage.setItem("app_versao","v9.2");
+                localStorage.setItem("app_versao","v9.3");
                 setTimeout(()=>location.href="./controle-financeiro.html?updated=v9&ts="+Date.now(), 1500);
               });
             }
@@ -2910,5 +2929,5 @@
       }
     })();
   </script>
-<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a2a9c507e9f96223',t:'MTc4NjY0NTYwMg=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a2a9cd514e3ca9e4',t:'MTc4NjY0NTk0MQ=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
