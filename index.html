@@ -338,7 +338,7 @@
   <script>
     // FORÇA ATUALIZAÇÃO DO PWA SE VERSÃO ANTIGA SEM LEMBRAR
     (function(){
-      const VERSAO_ATUAL = "v8-auto-sync";
+      const VERSAO_ATUAL = "v9-final";
       const versaoSalva = localStorage.getItem("app_versao");
       const precisaAtualizar = versaoSalva !== VERSAO_ATUAL;
       const temLembrar = !!document.getElementById && true; // será checado após DOM
@@ -383,7 +383,7 @@
     })();
   </script>
   <div id="loginScreen" class="login-screen">
-    <div class="login-card">
+    <div class="login-card"><div style="position:absolute;top:10px;right:12px;font-size:10px;color:#64748b;background:#f1f5f9;padding:2px 6px;border-radius:6px">v9-final</div>
       <h2>💰 Controle Financeiro</h2>
       <p>Entre com usuário e senha</p>
       <input type="text" id="loginUsuario" placeholder="Usuário" autocomplete="username">
@@ -2813,6 +2813,28 @@
       }
     });
 
+    
+    // Listener v9 para forçar atualização quando SW detecta versão antiga
+    if('serviceWorker' in navigator){
+      navigator.serviceWorker.addEventListener("message", function(event){
+        if(event.data && event.data.type==="NEW_VERSION"){
+          console.log("[PWA v9] Nova versão", event.data.version, "forçando reload");
+          const isPWA = window.matchMedia("(display-mode: standalone)").matches;
+          if(isPWA){
+            // Se não tem lembrar, é versão antiga - força reload com limpeza
+            const temCheckbox = document.getElementById("lembrarMe");
+            if(!temCheckbox){
+              document.body.innerHTML = '<div style="padding:30px;text-align:center;font-family:sans-serif"><h2>🔄 Atualizando para v9...</h2><p>Detectamos app antigo.</p><p>Limpando cache...</p></div>';
+              caches.keys().then(ks=>Promise.all(ks.map(k=>caches.delete(k)))).then(()=>{
+                localStorage.setItem("app_versao","v9-final");
+                setTimeout(()=>location.href="./controle-financeiro.html?updated=v9&ts="+Date.now(), 1500);
+              });
+            }
+          }
+        }
+      });
+    }
+
     // Tenta login automático se tem "Lembrar de mim"
     // Mostra aviso se estiver em PWA instalado
     window.addEventListener("load", ()=>{
@@ -2855,5 +2877,5 @@
       }
     })();
   </script>
-<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a2a95d4d1cbe1da1',t:'MTc4NjY0MTM1Mw=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a2a9778d4d6df177',t:'MTc4NjY0MjQyOQ=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
