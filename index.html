@@ -338,7 +338,7 @@
   <script>
     // FORÇA ATUALIZAÇÃO DO PWA SE VERSÃO ANTIGA SEM LEMBRAR
     (function(){
-      const VERSAO_ATUAL = "v7-auto-backup";
+      const VERSAO_ATUAL = "v8-auto-sync";
       const versaoSalva = localStorage.getItem("app_versao");
       const precisaAtualizar = versaoSalva !== VERSAO_ATUAL;
       const temLembrar = !!document.getElementById && true; // será checado após DOM
@@ -409,7 +409,7 @@
       </div>
     </div>
     <h2>💰 Controle Financeiro</h2>
-    <div class="usuario-app">
+    <div class="usuario-app"><span id="indicadorSync" style="font-size:10px;color:#16a34a;opacity:0.4;transition:.3s">☁️</span>
       <span id="usuarioLogado">Usuário: -</span>
     </div>
     <div class="nav-mes-mobile">
@@ -988,13 +988,46 @@
       }
     }
 
+    let timerAutoBackup = null;
     function salvar(){
       try{
         localStorage.setItem(STORAGE_KEY, JSON.stringify(dados));
+        // AUTO SALVAR NA NUVEM silenciosamente a cada alteração
+        if(usuarioAtual && !usuarioAtual.modoLocal && firebaseDB && typeof FIREBASE_CONFIG !== "undefined"){
+          if(timerAutoBackup) clearTimeout(timerAutoBackup);
+          timerAutoBackup = setTimeout(async ()=>{
+            try{
+              if(!obterCaminhoBackup()) return;
+              const backup = montarBackup();
+              const pacote = await criptografarBackup(backup);
+              await firebaseDB.ref(obterCaminhoBackup()).set(pacote);
+              console.log("[AutoSync] Backup salvo automaticamente na nuvem -", dados.length, "registros");
+              // Mostra indicador discreto
+              const indicador = document.getElementById("indicadorSync");
+              if(indicador){
+                indicador.innerText = "☁️ Salvo " + new Date().toLocaleTimeString("pt-BR").slice(0,5);
+                indicador.style.opacity = "1";
+                setTimeout(()=>{ indicador.style.opacity="0.4"; }, 3000);
+              }
+            }catch(e){
+              console.warn("[AutoSync] Falha ao salvar automático", e.message);
+            }
+          }, 2500); // espera 2.5s após última edição para não ficar salvando toda hora
+        }
       }catch(erro){
         console.error("Erro ao salvar no localStorage:", erro);
         alert("Não foi possível salvar os dados no navegador. Verifique o espaço disponível ou as permissões do navegador.");
       }
+    }
+
+    async function salvarBackupAutomaticoSilencioso(){
+      if(!usuarioAtual || usuarioAtual.modoLocal || !firebaseDB) return;
+      try{
+        const backup = montarBackup();
+        const pacote = await criptografarBackup(backup);
+        await firebaseDB.ref(obterCaminhoBackup()).set(pacote);
+        console.log("[AutoSync] Salvo silencioso");
+      }catch(e){ console.warn("[AutoSync] erro", e); }
     }
 
     function firebaseConfigurado(){
@@ -2822,5 +2855,5 @@
       }
     })();
   </script>
-<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a2a954c48aeb29b4',t:'MTc4NjY0MTAwNA=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a2a95d4d1cbe1da1',t:'MTc4NjY0MTM1Mw=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
