@@ -335,7 +335,7 @@
     
 
 <script>
-// Força atualização do WebAPK no Android - v9.4
+// Força atualização do WebAPK no Android - v9.5
 (function(){
   if('serviceWorker' in navigator){
     navigator.serviceWorker.ready.then(function(reg){
@@ -347,10 +347,10 @@
     const badge = document.querySelector("#versaoApp") || document.querySelector("div[style*='v9']");
     if(isPWA){
       const currentVersion = localStorage.getItem("app_versao");
-      if(currentVersion && currentVersion !== "v9.4"){
-        console.log("[WebAPK] Versão antiga detectada:", currentVersion, "-> v9.4, limpando");
+      if(currentVersion && currentVersion !== "v9.5"){
+        console.log("[WebAPK] Versão antiga detectada:", currentVersion, "-> v9.5, limpando");
         setTimeout(function(){
-          if(confirm("🔄 Nova versão v9.4 disponível! Seu app está na "+currentVersion+". Atualizar agora?")){
+          if(confirm("🔄 Nova versão v9.5 disponível! Seu app está na "+currentVersion+". Atualizar agora?")){
             caches.keys().then(function(keys){ return Promise.all(keys.map(function(k){return caches.delete(k)})); }).then(function(){
               location.href = "./?v=9.4&forceUpdate="+Date.now();
             });
@@ -367,7 +367,7 @@
   <script>
     // FORÇA ATUALIZAÇÃO DO PWA SE VERSÃO ANTIGA SEM LEMBRAR
     (function(){
-      const VERSAO_ATUAL = "v9.4";
+      const VERSAO_ATUAL = "v9.5";
       const versaoSalva = localStorage.getItem("app_versao");
       const precisaAtualizar = versaoSalva !== VERSAO_ATUAL;
       const temLembrar = !!document.getElementById && true; // será checado após DOM
@@ -412,7 +412,7 @@
     })();
   </script>
   <div id="loginScreen" class="login-screen">
-    <div class="login-card"><div style="position:absolute;top:10px;right:12px;font-size:10px;color:#64748b;background:#f1f5f9;padding:2px 6px;border-radius:6px">v9.4</div>
+    <div class="login-card"><div style="position:absolute;top:10px;right:12px;font-size:10px;color:#64748b;background:#f1f5f9;padding:2px 6px;border-radius:6px">v9.5</div>
       <h2>💰 Controle Financeiro</h2>
       <p>Entre com usuário e senha</p>
       <input type="text" id="loginUsuario" placeholder="Usuário" autocomplete="username">
@@ -742,7 +742,88 @@
     }
 
 
-    function testarNotificacaoAgora(){
+        async function testarNotificacaoAgora(){
+      console.log("[Teste] Permissão:", Notification.permission, "SW:", !!navigator.serviceWorker.controller, "UA:", navigator.userAgent.slice(0,80));
+      if(!("Notification" in window)){
+        alert("❌ Seu navegador não suporta notificações\nUse Chrome ou Edge no Android, não use Firefox/Samsung Internet");
+        return;
+      }
+      const isAndroid = /Android/i.test(navigator.userAgent);
+      
+      const enviarViaSW = async (titulo, corpo)=>{
+        try{
+          if('serviceWorker' in navigator){
+            const reg = await navigator.serviceWorker.ready;
+            await reg.showNotification(titulo, {
+              body: corpo,
+              icon: "./icon-192.png",
+              badge: "./icon-96.png",
+              tag: "teste-agora-v9.5",
+              vibrate: [200, 100, 200],
+              requireInteraction: false,
+              data: { url: "./" }
+            });
+            console.log("[Teste] Via SW showNotification enviado");
+            return true;
+          }
+        }catch(e){ console.error("[Teste] SW falhou", e); }
+        return false;
+      };
+      
+      const enviarDireto = (titulo, corpo)=>{
+        try{
+          const n = new Notification(titulo, {
+            body: corpo,
+            icon: "./icon-192.png",
+            badge: "./icon-96.png",
+            tag: "teste-agora-direto",
+            requireInteraction: false
+          });
+          n.onclick = ()=>{ window.focus(); n.close(); };
+          console.log("[Teste] Direto enviado");
+          return true;
+        }catch(e){ console.error("[Teste] Direto falhou", e); return false; }
+      };
+
+      const executarTeste = async ()=>{
+        const titulo = "🔔 Teste v9.5" + (isAndroid ? " - Android" : " - PC");
+        const corpo = isAndroid ? "Se aparecer na barra superior, está funcionando! Deslize de cima para baixo para ver." : "Se você está vendo este pop-up no canto inferior direito, as notificações estão funcionando!";
+        
+        let ok = false;
+        if(isAndroid){
+          // No Android, SEMPRE usa Service Worker - new Notification() muitas vezes não mostra
+          console.log("[Teste] Android detectado, usando SW");
+          ok = await enviarViaSW(titulo, corpo);
+          if(!ok) ok = enviarDireto(titulo, corpo);
+        } else {
+          ok = enviarDireto(titulo, corpo);
+          if(!ok) ok = await enviarViaSW(titulo, corpo);
+        }
+        return ok;
+      };
+
+      if(Notification.permission === "default"){
+        const perm = await Notification.requestPermission();
+        console.log("[Teste] Permissão nova:", perm);
+        if(perm==="granted"){
+          const ok = await executarTeste();
+          alert(ok ? "✅ Permissão concedida e teste enviado!\n\nAndroid: deslize de cima para baixo na tela\nPC: olhe canto inferior direito" : "❌ Falha ao enviar mesmo com permissão");
+        } else {
+          alert("❌ Permissão negada: "+perm+"\n\nAndroid: Vá em Chrome > ⋮ > Configurações > Notificações > Ativar\nDepois: Configurações do site > Seu site > Notificações > Permitir\nSistema: Android > Config > Apps > Chrome > Notificações > Permitir");
+        }
+      } else if(Notification.permission === "denied"){
+        alert("❌ BLOQUEADO!\n\n1) Android > Configurações > Apps > Chrome > Notificações > PERMITIR\n2) Se instalou o PWA, também: Apps > Financeiro > Notificações > Permitir\n3) Chrome > ⋮ > Configurações > Notificações > Permitir\n4) Chrome > ⋮ > Configurações > Config. do site > Todos > github.io > Notificações > Permitir\n\nDepois recarregue e clique em Ativar de novo");
+      } else {
+        // granted
+        const ok = await executarTeste();
+        if(ok){
+          alert("✅ Teste enviado!\n\nSe não apareceu:\n- Android: deslize o dedo de cima para baixo (barra de notificações)\n- Verifique se 'Não Perturbe' está DESLIGADO\n- Android > Config > Apps > Financeiro > Notificações > Permitir\n- Tente com o app minimizado (botão home), não fechado");
+        } else {
+          alert("❌ Falha. Tente: Chrome > Configurações > Armazenamento > Seu site > Limpar e redefinir > recarregue");
+        }
+      }
+    }
+function testarNotificacaoAgoraOLD(){
       console.log("[Teste] Permissão:", Notification.permission, "SW controller:", !!navigator.serviceWorker.controller);
       if(!("Notification" in window)){
         alert("❌ Seu navegador não suporta notificações\nUse Chrome ou Edge");
@@ -783,7 +864,7 @@
       } else {
         // granted - manda teste na hora
         const vencs = obterVencimentosProximos();
-        const ok = enviarTesteDireto("🔔 Teste - v9.4", vencs.length>0 ? "Funcionando! Você tem "+vencs.length+" conta(s) a vencer hoje" : "Se você está vendo este pop-up, as notificações estão funcionando! (teste sem contas)");
+        const ok = enviarTesteDireto("🔔 Teste - v9.5", vencs.length>0 ? "Funcionando! Você tem "+vencs.length+" conta(s) a vencer hoje" : "Se você está vendo este pop-up, as notificações estão funcionando! (teste sem contas)");
         if(ok){
           alert("✅ Teste enviado direto!\n\nSe não apareceu:\n- PC: Win+N para abrir central de notificações\n- Celular: deslize de cima para baixo\n- Verifique se Chrome tem permissão nas configurações do Android");
         } else {
@@ -2907,7 +2988,7 @@
             if(!temCheckbox){
               document.body.innerHTML = '<div style="padding:30px;text-align:center;font-family:sans-serif"><h2>🔄 Atualizando para v9...</h2><p>Detectamos app antigo.</p><p>Limpando cache...</p></div>';
               caches.keys().then(ks=>Promise.all(ks.map(k=>caches.delete(k)))).then(()=>{
-                localStorage.setItem("app_versao","v9.4");
+                localStorage.setItem("app_versao","v9.5");
                 setTimeout(()=>location.href="./controle-financeiro.html?updated=v9&ts="+Date.now(), 1500);
               });
             }
@@ -2958,5 +3039,5 @@
       }
     })();
   </script>
-<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a2a9db0d5a315f28',t:'MTc4NjY0NjUwNA=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a2a9e45ca8f4a40f',t:'MTc4NjY0Njg4NQ=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
