@@ -1,12 +1,12 @@
-/* Controle Financeiro PWA v9 - FIX FINAL: apaga tudo antigo e força atualização */
-const CACHE_NAME = "financeiro-pwa-v9-final";
-const VERSION = "v9";
+/* Controle Financeiro PWA v9.5 - FIX FINAL: apaga tudo antigo e força atualização */
+const CACHE_NAME = "financeiro-pwa-v9.5-4";
+const VERSION = "v9.5";
 
 self.addEventListener("install", (e) => {
-  console.log("[SW v9] Install - Limpando tudo antigo antes");
+  console.log("[SW v9.5] Install - Limpando tudo antigo antes");
   e.waitUntil(
     caches.keys().then(keys => Promise.all(keys.map(k=>{
-      console.log("[SW v9] Apagando cache", k);
+      console.log("[SW v9.5] Apagando cache", k);
       return caches.delete(k);
     }))).then(()=>{
       // Não cacheia HTML, só ícones
@@ -21,7 +21,7 @@ self.addEventListener("install", (e) => {
 });
 
 self.addEventListener("activate", (e) => {
-  console.log("[SW v9] Activate - tomando controle total e recarregando clientes antigos");
+  console.log("[SW v9.5] Activate - tomando controle total e recarregando clientes antigos");
   e.waitUntil(
     caches.keys().then(keys => Promise.all(keys.filter(k=>k!==CACHE_NAME).map(k=>caches.delete(k))))
     .then(()=>self.clients.claim())
