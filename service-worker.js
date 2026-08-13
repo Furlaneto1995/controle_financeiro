@@ -1,110 +1,67 @@
-/* Controle Financeiro PWA v8 - FIX DEFINITIVO: nunca cacheia HTML, só ícones */
-const CACHE_NAME = "financeiro-pwa-v8-no-html-cache";
-const ICONS_CACHE = [
-  "./manifest.json",
-  "./icon-96.png",
-  "./icon-144.png",
-  "./icon-180.png",
-  "./icon-192.png",
-  "./icon-512.png",
-  "./icon-512-maskable.png"
-];
+/* Controle Financeiro PWA v9 - FIX FINAL: apaga tudo antigo e força atualização */
+const CACHE_NAME = "financeiro-pwa-v9-final";
+const VERSION = "v9";
 
 self.addEventListener("install", (e) => {
-  console.log("[SW v8] Install - cacheando SÓ ícones, NUNCA HTML");
+  console.log("[SW v9] Install - Limpando tudo antigo antes");
   e.waitUntil(
-    caches.open(CACHE_NAME).then(c => c.addAll(ICONS_CACHE)).then(()=>self.skipWaiting())
+    caches.keys().then(keys => Promise.all(keys.map(k=>{
+      console.log("[SW v9] Apagando cache", k);
+      return caches.delete(k);
+    }))).then(()=>{
+      // Não cacheia HTML, só ícones
+      return caches.open(CACHE_NAME).then(c=>c.addAll([
+        "./manifest.json",
+        "./icon-96.png",
+        "./icon-192.png",
+        "./icon-512.png"
+      ]));
+    }).then(()=>self.skipWaiting())
   );
 });
 
 self.addEventListener("activate", (e) => {
-  console.log("[SW v8] Activate - apagando TODOS caches antigos de HTML");
+  console.log("[SW v9] Activate - tomando controle total e recarregando clientes antigos");
   e.waitUntil(
-    caches.keys().then(keys => Promise.all(keys.map(k=>{
-      console.log("[SW v8] Deletando cache antigo", k);
-      return caches.delete(k);
-    }))).then(()=>self.clients.claim())
+    caches.keys().then(keys => Promise.all(keys.filter(k=>k!==CACHE_NAME).map(k=>caches.delete(k))))
+    .then(()=>self.clients.claim())
+    .then(()=>self.clients.matchAll({type:"window"})).then(clients=>{
+      clients.forEach(client=>{
+        // Avisa clientes que tem nova versão e precisam recarregar
+        client.postMessage({type:"NEW_VERSION", version: VERSION});
+      });
+    })
   );
 });
 
 self.addEventListener("fetch", (e) => {
   const url = e.request.url;
-  
-  // NUNCA intercepta HTML, manifest ou service-worker - deixa ir direto na rede para sempre pegar versão nova
+  // HTML, manifest, SW, firebase NUNCA cacheia
   if (e.request.mode === "navigate" || 
-      url.includes("controle-financeiro.html") || 
+      url.includes("controle-financeiro.html") ||
       url.includes("index.html") ||
       url.includes("manifest.json") ||
       url.includes("service-worker.js") ||
-      url.includes("firebaseio.com") ||
       url.includes("firebase")) {
-    // Network only - sem cache, sempre última versão
-    e.respondWith(fetch(e.request).catch(()=>caches.match("./icon-192.png")));
+    e.respondWith(fetch(e.request, {cache: "no-store"}).catch(()=>caches.match("./icon-192.png")));
     return;
   }
-  
-  // Só para ícones: cache first
+  // Ícones: cache first
   e.respondWith(
     caches.match(e.request).then(cached=>{
       if(cached) return cached;
       return fetch(e.request).then(nr=>{
-        if(nr&&nr.status===200){
-          caches.open(CACHE_NAME).then(c=>c.put(e.request, nr.clone()));
-        }
+        if(nr&&nr.status===200) caches.open(CACHE_NAME).then(c=>c.put(e.request, nr.clone()));
         return nr;
       });
     })
   );
 });
 
-async function agendarNotificacaoDiaria(timestamp, titulo, corpo) {
-  if ('showTrigger' in Notification.prototype) {
-    try {
-      const tag = "financeiro-agendado-" + new Date(timestamp).toISOString().slice(0,10);
-      const existing = await self.registration.getNotifications({ tag });
-      existing.forEach(n=>n.close());
-      await self.registration.showNotification(titulo, {
-        body: corpo,
-        icon: "./icon-192.png",
-        badge: "./icon-96.png",
-        tag: tag,
-        renotify: true,
-        data: { url: "./controle-financeiro.html", agendada: true },
-        showTrigger: new TimestampTrigger(timestamp),
-        actions: [{action:"abrir",title:"💰 Abrir"},{action:"pagar",title:"✔️ Pendentes"}]
-      });
-      return true;
-    } catch(e){ console.error(e); return false; }
+self.addEventListener("message", (e) => {
+  if(!e.data) return;
+  if(e.data.type==="SKIP_WAITING") self.skipWaiting();
+  if(e.data.type==="CLEAR_ALL"){
+    e.waitUntil(caches.keys().then(ks=>Promise.all(ks.map(k=>caches.delete(k)))).then(()=>self.skipWaiting()));
   }
-  return false;
-}
-
-self.addEventListener("message", async (event) => {
-  const data = event.data;
-  if (!data) return;
-  if (data.type === "SHOW_NOTIFICATION") {
-    event.waitUntil(self.registration.showNotification(data.title||"Controle Financeiro",{
-      body: data.body||"Contas a vencer!",
-      icon:"./icon-192.png", badge:"./icon-96.png", tag:"financeiro-vencimento", renotify:true,
-      data:{url:data.url||"./controle-financeiro.html"}
-    }));
-  }
-  if (data.type === "SCHEDULE_DAILY_NOTIFICATION") {
-    event.waitUntil(agendarNotificacaoDiaria(data.timestamp, data.title, data.body));
-  }
-  if (data.type === "SKIP_WAITING") self.skipWaiting();
-  if (data.type === "CLEAR_ALL_CACHE") {
-    event.waitUntil(caches.keys().then(keys=>Promise.all(keys.map(k=>caches.delete(k)))).then(()=>self.skipWaiting()));
-  }
-});
-
-self.addEventListener("notificationclick", (event) => {
-  event.notification.close();
-  const url = event.notification.data?.url||"./controle-financeiro.html";
-  event.waitUntil(
-    clients.matchAll({type:"window",includeUncontrolled:true}).then(list=>{
-      for(const c of list){ if(c.url.includes("controle-financeiro")&&"focus" in c){ return c.focus(); } }
-      if(clients.openWindow) return clients.openWindow(url);
-    })
-  );
 });
