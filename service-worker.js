@@ -1,6 +1,6 @@
 /* Controle Financeiro PWA - Service Worker */
-const CACHE_NAME = "financeiro-pwa-v3";
-const CACHE_VERSION = "v3";
+const CACHE_NAME = "financeiro-pwa-v8";
+const CACHE_VERSION = "v8";
 const ASSETS_TO_CACHE = [
   "./",
   "./controle-financeiro.html",
