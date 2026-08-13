@@ -335,7 +335,7 @@
     
 
 <script>
-// Força atualização do WebAPK no Android - v9.6
+// Força atualização do WebAPK no Android - v9.7
 (function(){
   if('serviceWorker' in navigator){
     navigator.serviceWorker.ready.then(function(reg){
@@ -347,10 +347,10 @@
     const badge = document.querySelector("#versaoApp") || document.querySelector("div[style*='v9']");
     if(isPWA){
       const currentVersion = localStorage.getItem("app_versao");
-      if(currentVersion && currentVersion !== "v9.6"){
-        console.log("[WebAPK] Versão antiga detectada:", currentVersion, "-> v9.6, limpando");
+      if(currentVersion && currentVersion !== "v9.7"){
+        console.log("[WebAPK] Versão antiga detectada:", currentVersion, "-> v9.7, limpando");
         setTimeout(function(){
-          if(confirm("🔄 Nova versão v9.6 disponível! Seu app está na "+currentVersion+". Atualizar agora?")){
+          if(confirm("🔄 Nova versão v9.7 disponível! Seu app está na "+currentVersion+". Atualizar agora?")){
             caches.keys().then(function(keys){ return Promise.all(keys.map(function(k){return caches.delete(k)})); }).then(function(){
               location.href = "./?v=9.4&forceUpdate="+Date.now();
             });
@@ -367,7 +367,7 @@
   <script>
     // FORÇA ATUALIZAÇÃO DO PWA SE VERSÃO ANTIGA SEM LEMBRAR
     (function(){
-      const VERSAO_ATUAL = "v9.6";
+      const VERSAO_ATUAL = "v9.7";
       const versaoSalva = localStorage.getItem("app_versao");
       const precisaAtualizar = versaoSalva !== VERSAO_ATUAL;
       const temLembrar = !!document.getElementById && true; // será checado após DOM
@@ -412,7 +412,7 @@
     })();
   </script>
   <div id="loginScreen" class="login-screen">
-    <div class="login-card"><div style="position:absolute;top:10px;right:12px;font-size:10px;color:#64748b;background:#f1f5f9;padding:2px 6px;border-radius:6px">v9.6</div>
+    <div class="login-card"><div style="position:absolute;top:10px;right:12px;font-size:10px;color:#64748b;background:#f1f5f9;padding:2px 6px;border-radius:6px">v9.7</div>
       <h2>💰 Controle Financeiro</h2>
       <p>Entre com usuário e senha</p>
       <input type="text" id="loginUsuario" placeholder="Usuário" autocomplete="username">
@@ -755,7 +755,7 @@
               body: corpo,
               icon: "./icon-192.png",
               badge: "./icon-96.png",
-              tag: "teste-agora-v9.6",
+              tag: "teste-agora-v9.7",
               vibrate: [200, 100, 200],
               requireInteraction: false,
               data: { url: "./" }
@@ -783,7 +783,7 @@
       };
 
       const executarTeste = async ()=>{
-        const titulo = "🔔 Teste v9.6" + (isAndroid ? " - Android" : " - PC");
+        const titulo = "🔔 Teste v9.7" + (isAndroid ? " - Android" : " - PC");
         const corpo = isAndroid ? "Se aparecer na barra superior, está funcionando! Deslize de cima para baixo para ver." : "Se você está vendo este pop-up no canto inferior direito, as notificações estão funcionando!";
         
         let ok = false;
@@ -861,7 +861,7 @@ function testarNotificacaoAgoraOLD(){
       } else {
         // granted - manda teste na hora
         const vencs = obterVencimentosProximos();
-        const ok = enviarTesteDireto("🔔 Teste - v9.6", vencs.length>0 ? "Funcionando! Você tem "+vencs.length+" conta(s) a vencer hoje" : "Se você está vendo este pop-up, as notificações estão funcionando! (teste sem contas)");
+        const ok = enviarTesteDireto("🔔 Teste - v9.7", vencs.length>0 ? "Funcionando! Você tem "+vencs.length+" conta(s) a vencer hoje" : "Se você está vendo este pop-up, as notificações estão funcionando! (teste sem contas)");
         if(ok){
           alert("✅ Teste enviado direto!\n\nSe não apareceu:\n- PC: Win+N para abrir central de notificações\n- Celular: deslize de cima para baixo\n- Verifique se Chrome tem permissão nas configurações do Android");
         } else {
@@ -979,7 +979,7 @@ function testarNotificacaoAgoraOLD(){
       if(isAtivo) fecharPainelNotificacoes();
       else abrirPainelNotificacoes();
     }
-    function verificarNotificacoes(forcarPush = false){
+    async function verificarNotificacoes(forcarPush = false){
       try{
         carregarConfigNotificacao();
         const vencimentos = obterVencimentosProximos();
@@ -1054,24 +1054,50 @@ function testarNotificacaoAgoraOLD(){
           }
         }
 
-        // Notificação push (evitar spam: só 1 vez por dia, salvo se forçar)
-        if(count>0 && configNotificacao.pushAtivo && "Notification" in window && Notification.permission==="granted"){
+        // Notificação push - CORRIGIDO: manda mesmo sem contas se for agendamento ou teste forçado
+        if(configNotificacao.pushAtivo && "Notification" in window && Notification.permission==="granted"){
           const jaNotificouHoje = configNotificacao.ultimoAvisoData === hojeISO;
           if(forcarPush || !jaNotificouHoje){
-            const vencidas = vencimentos.filter(v=>v.tipo==="vencida").length;
-            const hojeQtd = vencimentos.filter(v=>v.tipo==="hoje").length;
-            const proximas = vencimentos.filter(v=>v.tipo==="proxima").length;
-            let titulo="Controle Financeiro - Vencimentos";
-            let corpo="";
-            if(vencidas>0) corpo+= vencidas+" vencida"+(vencidas>1?"s":"")+"! ";
-            if(hojeQtd>0) corpo+= hojeQtd+" vence hoje! ";
-            if(proximas>0) corpo+= proximas+" próxima"+(proximas>1?"s":"")+" em até "+configNotificacao.diasAntecedencia+" dia"+(configNotificacao.diasAntecedencia>1?"s":"")+".";
-            const total = vencimentos.reduce((s,v)=>s+Number(v.item.valor||0),0);
-            corpo+= " Total: "+formatarMoeda(total);
-            enviarNotificacaoBrowser(titulo, corpo);
-            configNotificacao.ultimoAvisoData = hojeISO;
-            salvarConfigNotificacao();
+            if(count>0){
+              const vencidas = vencimentos.filter(v=>v.tipo==="vencida").length;
+              const hojeQtd = vencimentos.filter(v=>v.tipo==="hoje").length;
+              const proximas = vencimentos.filter(v=>v.tipo==="proxima").length;
+              let titulo="Controle Financeiro - Vencimentos";
+              let corpo="";
+              if(vencidas>0) corpo+= vencidas+" vencida"+(vencidas>1?"s":"")+"! ";
+              if(hojeQtd>0) corpo+= hojeQtd+" vence hoje! ";
+              if(proximas>0) corpo+= proximas+" próxima"+(proximas>1?"s":"")+" em até "+configNotificacao.diasAntecedencia+" dia"+(configNotificacao.diasAntecedencia>1?"s":"")+".";
+              const total = vencimentos.reduce((s,v)=>s+Number(v.item.valor||0),0);
+              corpo+= " Total: "+formatarMoeda(total);
+              // Usa envio direto para garantir que chega mesmo se SW falhar
+              try{
+                const reg = await navigator.serviceWorker.ready;
+                await reg.showNotification(titulo, { body: corpo, icon: "./icon-192.png", badge: "./icon-96.png", tag: "vencimento-agendado", vibrate: [200,100,200] });
+              }catch(e){
+                enviarNotificacaoBrowser(titulo, corpo);
+              }
+              console.log("[Notificação] Enviada com", count, "vencimentos");
+            } else if(forcarPush){
+              // Mesmo sem contas, se foi agendamento forçado (timer chegou no horário ou botão Teste em 1 min), avisa que está funcionando
+              const titulo = "Controle Financeiro - Lembrete "+configNotificacao.horarioNotificacao;
+              const corpo = "⏰ Chegou no horário agendado! Tudo em dia, nenhuma conta a vencer nos próximos "+configNotificacao.diasAntecedencia+" dias.";
+              try{
+                const reg = await navigator.serviceWorker.ready;
+                await reg.showNotification(titulo, { body: corpo, icon: "./icon-192.png", badge: "./icon-96.png", tag: "lembrete-vazio", vibrate: [200,100,200] });
+              }catch(e){
+                enviarNotificacaoBrowser(titulo, corpo);
+              }
+              console.log("[Notificação] Enviada vazia (tudo em dia) no horário agendado");
+            }
+            if(count>0 || forcarPush){
+              configNotificacao.ultimoAvisoData = hojeISO;
+              salvarConfigNotificacao();
+            }
+          } else {
+            console.log("[Notificação] Já notificou hoje, ignorando");
           }
+        } else {
+          console.log("[Notificação] Não enviada - pushAtivo:", configNotificacao.pushAtivo, "permissao:", (typeof Notification!=="undefined"?Notification.permission:"sem Notification"), "count:", count, "forcar:", forcarPush);
         }
 
         // Tenta agendar notificação que funciona mesmo com app fechado (Trigger API)
@@ -2985,7 +3011,7 @@ function testarNotificacaoAgoraOLD(){
             if(!temCheckbox){
               document.body.innerHTML = '<div style="padding:30px;text-align:center;font-family:sans-serif"><h2>🔄 Atualizando para v9...</h2><p>Detectamos app antigo.</p><p>Limpando cache...</p></div>';
               caches.keys().then(ks=>Promise.all(ks.map(k=>caches.delete(k)))).then(()=>{
-                localStorage.setItem("app_versao","v9.6");
+                localStorage.setItem("app_versao","v9.7");
                 setTimeout(()=>location.href="./controle-financeiro.html?updated=v9&ts="+Date.now(), 1500);
               });
             }
@@ -3036,5 +3062,5 @@ function testarNotificacaoAgoraOLD(){
       }
     })();
   </script>
-<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a2a9f0922bb44a71',t:'MTc4NjY0NzM4NQ=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a2aa162bfc36bc35',t:'MTc4NjY0ODkyNg=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
