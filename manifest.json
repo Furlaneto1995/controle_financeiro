@@ -7,7 +7,7 @@
   "display_override": ["standalone", "window-controls-overlay"],
   "background_color": "#2b4668",
   "theme_color": "#2b4668",
-  "orientation": "any",
+  "orientation": "portrait",
   "scope": "./",
   "lang": "pt-BR",
   "categories": ["finance", "productivity"],
