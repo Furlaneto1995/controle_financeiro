@@ -320,10 +320,11 @@
       <p>Entre com usuário e senha</p>
       <input type="text" id="loginUsuario" placeholder="Usuário" autocomplete="username">
       <input type="password" id="loginSenha" placeholder="Senha" autocomplete="current-password" onkeydown="if(event.key==='Enter') entrarApp()">
-      <label style="display:flex;align-items:center;gap:8px;margin:8px 0 10px;text-align:left;font-size:13px;color:#334155;cursor:pointer;font-weight:600"><input type="checkbox" id="lembrarMe" checked style="width:18px;height:18px"> Lembrar de mim neste aparelho</label>
+      <label style="display:flex;align-items:center;gap:8px;margin:10px 0 10px;text-align:left;font-size:14px;color:#0f172a;cursor:pointer;font-weight:700;background:#f0fdf4;border:1px solid #bbf7d0;padding:8px 10px;border-radius:10px"><input type="checkbox" id="lembrarMe" checked style="width:20px;height:20px"> Lembrar de mim (não pedir senha de novo)</label>
+      <div id="infoPWA" style="display:none;font-size:11px;color:#2563eb;background:#eff6ff;border:1px solid #bfdbfe;padding:6px 8px;border-radius:8px;margin-bottom:8px;line-height:1.3">📲 Modo App Instalado - Se limpar cookies, faça login 1 vez com "Lembrar" marcado que volta a entrar sozinho.</div>
       <button onclick="entrarApp()">Entrar</button>
       <button onclick="entrarModoLocal()" style="background:#f8fafc;color:#334155;border:1px solid #e2e8f0;margin-top:4px">📱 Continuar sem senha (só neste aparelho)</button>
-      <small>Use sempre o mesmo usuário e senha para conseguir baixar/decriptar seu backup.<br><span style="color:#16a34a">✔️ Com "Lembrar de mim" você só digita a senha na primeira vez.</span></small>
+      <small>Use sempre o mesmo usuário e senha para conseguir baixar/decriptar seu backup.<br><span style="color:#16a34a">✔️ Com "Lembrar de mim" você só digita a senha na primeira vez.</span><br><a href="#" onclick="limparCacheEAtualizar();return false" style="color:#64748b;text-decoration:underline;font-size:11px">Se o app não atualiza, clique aqui para limpar cache</a></small>
     </div>
   </div>
   <div class="container" id="appContainer" style="display:none">
@@ -1029,36 +1030,112 @@
 
     // ===== LEMBRAR DE MIM + MODO LOCAL SEM SENHA =====
     const SESSAO_LEMBRADA_KEY = STORAGE_KEY_BASE + "_sessao_lembrada";
+    const SESSAO_IDB_DB = "financeiro_pwa_db";
+    const SESSAO_IDB_STORE = "sessao";
+
+    // Fallback IndexedDB para quando limpa cookies mas não limpa site storage (PWA)
+    function salvarSessaoIDB(usuario, senha){
+      return new Promise((resolve)=>{
+        try{
+          const req = indexedDB.open(SESSAO_IDB_DB, 1);
+          req.onupgradeneeded = (e)=>{ e.target.result.createObjectStore(SESSAO_IDB_STORE); };
+          req.onsuccess = (e)=>{
+            const db=e.target.result;
+            const tx=db.transaction(SESSAO_IDB_STORE,"readwrite");
+            tx.objectStore(SESSAO_IDB_STORE).put({ usuario, senhaB64: btoa(unescape(encodeURIComponent(senha))), uid: gerarUidLogin(usuario), salvoEm: new Date().toISOString() }, "sessao");
+            tx.oncomplete=()=>{ db.close(); resolve(true); };
+          };
+          req.onerror=()=>resolve(false);
+        }catch(err){ resolve(false); }
+      });
+    }
+    function carregarSessaoIDB(){
+      return new Promise((resolve)=>{
+        try{
+          const req = indexedDB.open(SESSAO_IDB_DB, 1);
+          req.onsuccess = (e)=>{
+            const db=e.target.result;
+            if(!db.objectStoreNames.contains(SESSAO_IDB_STORE)){ db.close(); resolve(null); return; }
+            const tx=db.transaction(SESSAO_IDB_STORE,"readonly");
+            const get=tx.objectStore(SESSAO_IDB_STORE).get("sessao");
+            get.onsuccess=()=>{
+              const obj=get.result;
+              if(!obj){ db.close(); resolve(null); return; }
+              try{
+                const senha=decodeURIComponent(escape(atob(obj.senhaB64)));
+                db.close();
+                resolve({ usuario: obj.usuario, senha, uid: obj.uid });
+              }catch(err){ db.close(); resolve(null); }
+            };
+            get.onerror=()=>{ db.close(); resolve(null); };
+          };
+          req.onerror=()=>resolve(null);
+        }catch(err){ resolve(null); }
+      });
+    }
+    function limparSessaoIDB(){
+      return new Promise((resolve)=>{
+        try{
+          const req = indexedDB.open(SESSAO_IDB_DB, 1);
+          req.onsuccess=(e)=>{
+            const db=e.target.result;
+            if(!db.objectStoreNames.contains(SESSAO_IDB_STORE)){ db.close(); resolve(true); return; }
+            const tx=db.transaction(SESSAO_IDB_STORE,"readwrite");
+            tx.objectStore(SESSAO_IDB_STORE).delete("sessao");
+            tx.oncomplete=()=>{ db.close(); resolve(true); };
+          };
+          req.onerror=()=>resolve(false);
+        }catch(err){ resolve(false); }
+      });
+    }
+
     const MODO_LOCAL_UID = "local_aparelho";
 
     function salvarSessaoLembrada(usuario, senha){
       try{
         const dadosSessao = {
           usuario: usuario,
-          // NÃO salva senha em texto puro se puder evitar, mas para auto-descriptografia do backup precisamos dela.
-          // Salvamos ofuscada em base64 (não é criptografia forte, apenas para não ficar visível à primeira vista no localStorage)
           senhaB64: btoa(unescape(encodeURIComponent(senha))),
           uid: gerarUidLogin(usuario),
           salvoEm: new Date().toISOString()
         };
         localStorage.setItem(SESSAO_LEMBRADA_KEY, JSON.stringify(dadosSessao));
-        console.log("[Sessao] Sessão lembrada salva");
+        console.log("[Sessao] Sessão lembrada salva no localStorage");
+        // Salva também em IndexedDB como backup caso limpe cookies
+        salvarSessaoIDB(usuario, senha).then(ok=>console.log("[Sessao] IDB backup", ok));
       }catch(e){ console.warn("Erro salvar sessão", e); }
     }
 
     function carregarSessaoLembrada(){
       try{
         const raw = localStorage.getItem(SESSAO_LEMBRADA_KEY);
-        if(!raw) return null;
-        const obj = JSON.parse(raw);
-        if(!obj.usuario || !obj.senhaB64) return null;
-        const senha = decodeURIComponent(escape(atob(obj.senhaB64)));
-        return { usuario: obj.usuario, senha, uid: obj.uid };
+        if(raw){
+          const obj = JSON.parse(raw);
+          if(obj.usuario && obj.senhaB64){
+            const senha = decodeURIComponent(escape(atob(obj.senhaB64)));
+            return { usuario: obj.usuario, senha, uid: obj.uid, origem: "localStorage" };
+          }
+        }
+        return null;
       }catch(e){ return null; }
+    }
+    async function carregarSessaoLembradaCompleta(){
+      // Tenta localStorage primeiro, se falhar tenta IndexedDB (útil quando limpa cookies no celular mas PWA mantém IDB)
+      let sessao = carregarSessaoLembrada();
+      if(sessao) return sessao;
+      const idb = await carregarSessaoIDB();
+      if(idb){
+        console.log("[Sessao] Recuperada do IndexedDB após limpeza de cookies");
+        // Restaura no localStorage também
+        try{ salvarSessaoLembrada(idb.usuario, idb.senha); }catch(e){}
+        return { ...idb, origem: "indexedDB" };
+      }
+      return null;
     }
 
     function limparSessaoLembrada(){
       try{ localStorage.removeItem(SESSAO_LEMBRADA_KEY); }catch(e){}
+      limparSessaoIDB();
     }
 
     function obterDeviceIdLocal(){
@@ -1091,9 +1168,9 @@
     }
 
     async function tentarLoginAutomatico(){
-      const sessao = carregarSessaoLembrada();
+      const sessao = await carregarSessaoLembradaCompleta();
       if(!sessao) return false;
-      console.log("[Sessao] Tentando login automático para", sessao.usuario);
+      console.log("[Sessao] Tentando login automático para", sessao.usuario, "origem", sessao.origem||"");
       const inputUsuario = document.getElementById("loginUsuario");
       const inputSenha = document.getElementById("loginSenha");
       const checkLembrar = document.getElementById("lembrarMe");
@@ -2581,8 +2658,37 @@
     });
 
     // Tenta login automático se tem "Lembrar de mim"
+    // Mostra aviso se estiver em PWA instalado
+    window.addEventListener("load", ()=>{
+      const isPWA = window.matchMedia("(display-mode: standalone)").matches || window.navigator.standalone;
+      const info = document.getElementById("infoPWA");
+      if(isPWA && info) info.style.display="block";
+    });
+
+    // Botão para limpar cache e forçar atualização quando PWA fica com versão antiga
+    async function limparCacheEAtualizar(){
+      if(confirm("Limpar cache do app e atualizar para última versão?\n\nUse isso se o app não mostra 'Lembrar de mim' após atualizar.")){
+        try{
+          if('serviceWorker' in navigator){
+            const regs = await navigator.serviceWorker.getRegistrations();
+            for(const r of regs){ 
+              try{ r.active?.postMessage({type:"CLEAR_CACHE_AND_UPDATE"}); }catch(e){}
+              await r.unregister(); 
+            }
+          }
+          const keys = await caches.keys();
+          await Promise.all(keys.map(k=>caches.delete(k)));
+          localStorage.removeItem("financeiroClaro_cache_version");
+          alert("Cache limpo! O app vai recarregar atualizado.");
+          location.reload(true);
+        }catch(e){
+          alert("Erro ao limpar: "+e.message+"\nTente: Chrome > Configurações > Armazenamento > Seu site > Limpar e redefinir");
+        }
+      }
+    }
+
     (async ()=>{
-      const sessao = carregarSessaoLembrada();
+      const sessao = await carregarSessaoLembradaCompleta();
       if(sessao){
         const ok = await tentarLoginAutomatico();
         if(!ok){
@@ -2593,5 +2699,5 @@
       }
     })();
   </script>
-<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a2a91764bf38a490',t:'MTc4NjYzODQ5MA=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a2a9405ecc36c93d',t:'MTc4NjY0MDE2OA=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
