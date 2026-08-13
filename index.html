@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <link rel="manifest" href="./manifest.json">
+  <link rel="manifest" href="./manifest.json?v=9.4">
   <meta name="theme-color" content="#2b4668">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -333,12 +333,41 @@
     })();
     </script>
     
+
+<script>
+// Força atualização do WebAPK no Android - v9.4
+(function(){
+  if('serviceWorker' in navigator){
+    navigator.serviceWorker.ready.then(function(reg){
+      console.log("[WebAPK] Forçando update do SW para 9.4");
+      reg.update();
+    });
+    // Se estiver em PWA com versão antiga (9.2), força recarregar manifest
+    const isPWA = window.matchMedia("(display-mode: standalone)").matches;
+    const badge = document.querySelector("#versaoApp") || document.querySelector("div[style*='v9']");
+    if(isPWA){
+      const currentVersion = localStorage.getItem("app_versao");
+      if(currentVersion && currentVersion !== "v9.4"){
+        console.log("[WebAPK] Versão antiga detectada:", currentVersion, "-> v9.4, limpando");
+        setTimeout(function(){
+          if(confirm("🔄 Nova versão v9.4 disponível! Seu app está na "+currentVersion+". Atualizar agora?")){
+            caches.keys().then(function(keys){ return Promise.all(keys.map(function(k){return caches.delete(k)})); }).then(function(){
+              location.href = "./?v=9.4&forceUpdate="+Date.now();
+            });
+          }
+        }, 1500);
+      }
+    }
+  }
+})();
+</script>
+
 </head>
 <body>
   <script>
     // FORÇA ATUALIZAÇÃO DO PWA SE VERSÃO ANTIGA SEM LEMBRAR
     (function(){
-      const VERSAO_ATUAL = "v9.3";
+      const VERSAO_ATUAL = "v9.4";
       const versaoSalva = localStorage.getItem("app_versao");
       const precisaAtualizar = versaoSalva !== VERSAO_ATUAL;
       const temLembrar = !!document.getElementById && true; // será checado após DOM
@@ -383,7 +412,7 @@
     })();
   </script>
   <div id="loginScreen" class="login-screen">
-    <div class="login-card"><div style="position:absolute;top:10px;right:12px;font-size:10px;color:#64748b;background:#f1f5f9;padding:2px 6px;border-radius:6px">v9.3</div>
+    <div class="login-card"><div style="position:absolute;top:10px;right:12px;font-size:10px;color:#64748b;background:#f1f5f9;padding:2px 6px;border-radius:6px">v9.4</div>
       <h2>💰 Controle Financeiro</h2>
       <p>Entre com usuário e senha</p>
       <input type="text" id="loginUsuario" placeholder="Usuário" autocomplete="username">
@@ -754,7 +783,7 @@
       } else {
         // granted - manda teste na hora
         const vencs = obterVencimentosProximos();
-        const ok = enviarTesteDireto("🔔 Teste - v9.3", vencs.length>0 ? "Funcionando! Você tem "+vencs.length+" conta(s) a vencer hoje" : "Se você está vendo este pop-up, as notificações estão funcionando! (teste sem contas)");
+        const ok = enviarTesteDireto("🔔 Teste - v9.4", vencs.length>0 ? "Funcionando! Você tem "+vencs.length+" conta(s) a vencer hoje" : "Se você está vendo este pop-up, as notificações estão funcionando! (teste sem contas)");
         if(ok){
           alert("✅ Teste enviado direto!\n\nSe não apareceu:\n- PC: Win+N para abrir central de notificações\n- Celular: deslize de cima para baixo\n- Verifique se Chrome tem permissão nas configurações do Android");
         } else {
@@ -1626,7 +1655,7 @@
     if("serviceWorker" in navigator){
       window.addEventListener("load", async () => {
         try{
-          const reg = await navigator.serviceWorker.register("./service-worker.js");
+          const reg = await navigator.serviceWorker.register("./service-worker.js?v=9.4");
           console.log("[PWA] SW registrado", reg.scope);
           
           // Verifica atualizações
@@ -2786,7 +2815,7 @@
     if("serviceWorker" in navigator){
       window.addEventListener("load", async () => {
         try{
-          const reg = await navigator.serviceWorker.register("./service-worker.js");
+          const reg = await navigator.serviceWorker.register("./service-worker.js?v=9.4");
           console.log("[PWA] SW registrado", reg.scope);
           
           // Verifica atualizações
@@ -2878,7 +2907,7 @@
             if(!temCheckbox){
               document.body.innerHTML = '<div style="padding:30px;text-align:center;font-family:sans-serif"><h2>🔄 Atualizando para v9...</h2><p>Detectamos app antigo.</p><p>Limpando cache...</p></div>';
               caches.keys().then(ks=>Promise.all(ks.map(k=>caches.delete(k)))).then(()=>{
-                localStorage.setItem("app_versao","v9.3");
+                localStorage.setItem("app_versao","v9.4");
                 setTimeout(()=>location.href="./controle-financeiro.html?updated=v9&ts="+Date.now(), 1500);
               });
             }
@@ -2929,5 +2958,5 @@
       }
     })();
   </script>
-<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a2a9cd514e3ca9e4',t:'MTc4NjY0NTk0MQ=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a2a9db0d5a315f28',t:'MTc4NjY0NjUwNA=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
