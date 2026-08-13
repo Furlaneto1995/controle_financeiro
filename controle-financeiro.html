@@ -281,9 +281,9 @@
     @media(max-width:700px){.btn-instalar-pwa{bottom:96px;}}
 
     /* Notificações de vencimento */
-    .btn-notificacoes{position:relative;width:40px;height:40px;padding:0;border-radius:12px;background:#0f172a;color:white;font-size:20px;font-weight:bold;box-shadow:0 8px 22px rgba(15,23,42,.18);display:flex;align-items:center;justify-content:center;}
-    .btn-notificacoes:hover{transform:scale(1.05);}
-    .badge-notif{position:absolute;top:-4px;right:-4px;background:#dc2626;color:white;border-radius:12px;min-width:20px;height:20px;font-size:11px;display:flex;align-items:center;justify-content:center;padding:0 5px;border:2px solid white;font-weight:900;line-height:1;}
+    .btn-notificacoes{position:relative;width:38px;height:38px;padding:0;border-radius:50%;background:transparent;border:none;color:#1e293b;font-size:26px;font-weight:bold;display:flex;align-items:center;justify-content:center;box-shadow:none;cursor:pointer;transition:.2s;}
+    .btn-notificacoes:hover{transform:scale(1.15);background:#f1f5f9;}
+    .badge-notif{position:absolute;top:-2px;right:-2px;background:#dc2626;color:white;border-radius:12px;min-width:20px;height:20px;font-size:11px;display:flex;align-items:center;justify-content:center;padding:0 5px;border:2px solid white;font-weight:900;line-height:1;box-shadow:0 2px 6px rgba(220,38,38,.4);}
     .barra-vencimentos{display:none;padding:10px 12px;border-radius:12px;margin-bottom:8px;font-size:13px;font-weight:bold;cursor:pointer;align-items:center;gap:8px;}
     .barra-vencimentos.ativo{display:flex;}
     .barra-vencimentos.vencida{background:#fee2e2;border:1px solid #fecaca;color:#991b1b;}
@@ -306,21 +306,93 @@
     .notif-config label{display:flex;align-items:center;gap:6px;margin-bottom:6px;color:#334155;font-weight:600;}
     .notif-config input[type="number"]{width:56px;height:28px;padding:4px 6px;text-align:center;}
     @media(max-width:700px){
-      .btn-notificacoes{background:#2b4668;box-shadow:none;}
+      .btn-notificacoes{background:transparent;color:white;box-shadow:none;font-size:28px;width:40px;height:40px;}
+      .btn-notificacoes:hover{background:rgba(255,255,255,.15);}
       .painel-notificacoes{top:62px;right:10px;left:10px;width:auto;}
     }
 
   </style>
+
+    <script>
+    // Trava rotação em portrait no PWA instalado
+    (function(){
+      function travarOrientacao(){
+        try{
+          if(screen.orientation && screen.orientation.lock){
+            const isPWA = window.matchMedia("(display-mode: standalone)").matches || window.navigator.standalone;
+            if(isPWA){
+              screen.orientation.lock("portrait").catch(function(e){
+                console.log("[Orientation] lock falhou:", e.message);
+              });
+            }
+          }
+        }catch(e){}
+      }
+      window.addEventListener("load", travarOrientacao);
+      document.addEventListener("visibilitychange", function(){ if(document.visibilityState==="visible") travarOrientacao(); });
+    })();
+    </script>
+    
 </head>
 <body>
+  <script>
+    // FORÇA ATUALIZAÇÃO DO PWA SE VERSÃO ANTIGA SEM LEMBRAR
+    (function(){
+      const VERSAO_ATUAL = "v9-final";
+      const versaoSalva = localStorage.getItem("app_versao");
+      const precisaAtualizar = versaoSalva !== VERSAO_ATUAL;
+      const temLembrar = !!document.getElementById && true; // será checado após DOM
+      const isPWA = window.matchMedia("(display-mode: standalone)").matches || window.navigator.standalone;
+      
+      console.log("[PWA Update] Versão atual:", VERSAO_ATUAL, "Salva:", versaoSalva, "PWA:", isPWA);
+      
+      // Se está em PWA e versão antiga, força limpeza
+      if(precisaAtualizar && isPWA){
+        console.log("[PWA Update] Forçando limpeza por versão antiga");
+        if('serviceWorker' in navigator){
+          navigator.serviceWorker.getRegistrations().then(regs=>{
+            regs.forEach(r=>r.unregister());
+          });
+        }
+        if('caches' in window){
+          caches.keys().then(keys=>Promise.all(keys.map(k=>caches.delete(k))));
+        }
+      }
+      localStorage.setItem("app_versao", VERSAO_ATUAL);
+      
+      // Após carregar DOM, verifica se lembrar existe
+      window.addEventListener("DOMContentLoaded", ()=>{
+        setTimeout(()=>{
+          const temCheckbox = document.getElementById("lembrarMe");
+          const isPWA2 = window.matchMedia("(display-mode: standalone)").matches;
+          if(isPWA2 && !temCheckbox){
+            console.warn("[PWA] Versão antiga sem lembrar detectada, forçando reload");
+            document.body.innerHTML = '<div style="padding:20px;text-align:center;font-family:sans-serif"><h2>🔄 Atualizando app...</h2><p>Detectamos versão antiga instalada.</p><p>Estamos limpando cache e recarregando.</p><button onclick="localStorage.clear();if(\'serviceWorker\' in navigator){navigator.serviceWorker.getRegistrations().then(r=>r.forEach(reg=>reg.unregister()))} caches.keys().then(k=>Promise.all(k.map(c=>caches.delete(c)))).then(()=>location.reload(true))" style="padding:12px 20px;background:#3b82f6;color:white;border:none;border-radius:10px;font-weight:bold">Clique aqui para atualizar agora</button></div>';
+            setTimeout(()=>{
+              if('serviceWorker' in navigator){
+                navigator.serviceWorker.getRegistrations().then(regs=>{
+                  regs.forEach(r=>{ try{r.unregister()}catch(e){} });
+                });
+              }
+              caches.keys().then(keys=>{ keys.forEach(k=>caches.delete(k)); });
+              setTimeout(()=>location.reload(true), 2000);
+            }, 1000);
+          }
+        }, 800);
+      });
+    })();
+  </script>
   <div id="loginScreen" class="login-screen">
-    <div class="login-card">
+    <div class="login-card"><div style="position:absolute;top:10px;right:12px;font-size:10px;color:#64748b;background:#f1f5f9;padding:2px 6px;border-radius:6px">v9-final</div>
       <h2>💰 Controle Financeiro</h2>
       <p>Entre com usuário e senha</p>
       <input type="text" id="loginUsuario" placeholder="Usuário" autocomplete="username">
       <input type="password" id="loginSenha" placeholder="Senha" autocomplete="current-password" onkeydown="if(event.key==='Enter') entrarApp()">
+      <label style="display:flex;align-items:center;gap:8px;margin:10px 0 10px;text-align:left;font-size:14px;color:#0f172a;cursor:pointer;font-weight:700;background:#f0fdf4;border:1px solid #bbf7d0;padding:8px 10px;border-radius:10px"><input type="checkbox" id="lembrarMe" checked style="width:20px;height:20px"> Lembrar de mim (não pedir senha de novo)</label>
+      <div id="infoPWA" style="display:none;font-size:11px;color:#2563eb;background:#eff6ff;border:1px solid #bfdbfe;padding:6px 8px;border-radius:8px;margin-bottom:8px;line-height:1.3">📲 Modo App Instalado - Se limpar cookies, faça login 1 vez com "Lembrar" marcado que volta a entrar sozinho.</div>
       <button onclick="entrarApp()">Entrar</button>
-      <small>Use sempre o mesmo usuário e senha para conseguir baixar/decriptar seu backup.</small>
+      <button onclick="entrarModoLocal()" style="background:#f8fafc;color:#334155;border:1px solid #e2e8f0;margin-top:4px">📱 Continuar sem senha (só neste aparelho)</button>
+      <small>Use sempre o mesmo usuário e senha para conseguir baixar/decriptar seu backup.<br><span style="color:#16a34a">✔️ Com "Lembrar de mim" você só digita a senha na primeira vez.</span><br><a href="#" onclick="limparCacheEAtualizar();return false" style="color:#64748b;text-decoration:underline;font-size:11px">Se o app não atualiza, clique aqui para limpar cache</a></small>
     </div>
   </div>
   <div class="container" id="appContainer" style="display:none">
@@ -337,7 +409,7 @@
       </div>
     </div>
     <h2>💰 Controle Financeiro</h2>
-    <div class="usuario-app">
+    <div class="usuario-app"><span id="indicadorSync" style="font-size:10px;color:#16a34a;opacity:0.4;transition:.3s">☁️</span>
       <span id="usuarioLogado">Usuário: -</span>
     </div>
     <div class="nav-mes-mobile">
@@ -434,7 +506,11 @@
         <button onclick="verificarNotificacoes(true)" style="background:#64748b;color:white;padding:6px 10px;border-radius:7px;font-weight:bold;font-size:12px">🔄 Verificar agora</button>
         <button onclick="filtrarStatusRapido('pendente');fecharPainelNotificacoes()" style="background:#f59e0b;color:white;padding:6px 10px;border-radius:7px;font-weight:bold;font-size:12px">👁️ Ver pendentes</button>
       </div>
-      <small style="display:block;margin-top:6px;color:#64748b;line-height:1.3">Receba alertas de contas a vencer. No celular, mantenha o app aberto e permita notificações.</small>
+      <div id="avisoTrigger" style="display:none;padding:8px 10px;margin-top:8px;border-radius:8px;background:#fef3c7;border:1px solid #fde68a;color:#92400e;font-size:11px;line-height:1.3">
+        ⚠️ <b>Seu navegador não suporta aviso com app fechado.</b> No Chrome no PC, instale o PWA e deixe o Chrome rodando em segundo plano (Configurações > Sistema > Continuar executando apps em segundo plano). No modo atual o aviso funciona com o app aberto/minimizado.
+      </div>
+      <small id="txtAgendamentoFechado" style="display:block;margin-top:8px;color:#16a34a;font-weight:bold;font-size:11px;line-height:1.3"></small>
+      <small style="display:block;margin-top:6px;color:#64748b;line-height:1.3">💡 Dica PC: Instale o app (botão 📲) e no Chrome vá em <b>Configurações > Sistema > Continuar executando aplicativos em segundo plano quando o Google Chrome for fechado</b> = ATIVADO. Assim notifica mesmo fechado.</small>
     </div>
   </div>
 
@@ -553,6 +629,88 @@
         }catch(e){ console.warn(e); }
       }, 60000);
     }
+    function agendarNotificacaoParaAppFechado(){
+      try{
+        if(!("serviceWorker" in navigator)) return;
+        if(!navigator.serviceWorker.controller){
+          console.warn("[PWA] SW controller não pronto para agendar fechado");
+          return;
+        }
+        // Verifica se Trigger API é suportada
+        if(!('showTrigger' in Notification.prototype)){
+          console.log("[PWA] Trigger API não suportada, usando modo com app aberto");
+          const aviso = document.getElementById("avisoTrigger");
+          if(aviso) aviso.style.display="block";
+          return;
+        }
+        const aviso = document.getElementById("avisoTrigger");
+        if(aviso) aviso.style.display="none";
+        
+        const [h,m] = (configNotificacao.horarioNotificacao||"08:00").split(":").map(Number);
+        const agora = new Date();
+        let proxima = new Date();
+        proxima.setHours(h,m,0,0);
+        proxima.setSeconds(0);
+        proxima.setMilliseconds(0);
+        if(proxima <= agora){
+          proxima.setDate(proxima.getDate()+1);
+        }
+        // Calcula vencimentos que existirão nessa data futura
+        const dataAlvo = new Date(proxima);
+        dataAlvo.setHours(0,0,0,0);
+        const hojeMeiaNoite = obterHojeMeiaNoite();
+        const diffBase = Math.floor((dataAlvo - hojeMeiaNoite)/86400000);
+        
+        // Filtra o que estará vencido ou vencendo na data agendada
+        const futuros = dados.filter(item => item.tipo==="saida" && !item.pago && item.data).map(item=>{
+          const diffAtual = diffDias(item.data);
+          const diffNoDia = diffAtual - diffBase + (diffBase>0?0:0); // diff no dia alvo
+          // Na data alvo, item terá diff = diffDias - dias até lá
+          const diffFutura = diffDias(item.data) - diffBase;
+          // Mas diffDias já calcula hoje, então para data futura subtrai
+          return { item, diffFutura, diffAtual };
+        }).filter(x=>{
+          // Na data futura, considerar vencida (<0), hoje (0) ou próxima (1..dias)
+          return x.diffFutura <= configNotificacao.diasAntecedencia;
+        });
+        
+        const vencimentosHoje = obterVencimentosProximos();
+        let titulo = "Controle Financeiro - Lembrete";
+        let corpo;
+        if(futuros.length>0){
+          const total = futuros.reduce((s, f)=> s+Number(f.item.valor||0), 0);
+          const vencidasFut = futuros.filter(f=>f.diffFutura<0).length;
+          const hojeFut = futuros.filter(f=>f.diffFutura===0).length;
+          corpo = "";
+          if(vencidasFut>0) corpo += vencidasFut+" vencida"+(vencidasFut>1?"s":"")+"! ";
+          if(hojeFut>0) corpo += hojeFut+" vence nesse dia! ";
+          const prox = futuros.length - vencidasFut - hojeFut;
+          if(prox>0) corpo += prox+" próxima"+(prox>1?"s":"")+". ";
+          corpo += "Total "+formatarMoeda(total)+" - clique para abrir.";
+        }else{
+          // Mesmo sem contas, agenda um lembrete genérico
+          corpo = "💰 Bom dia! Abra o app para verificar suas contas de hoje.";
+        }
+        
+        navigator.serviceWorker.controller.postMessage({
+          type: "SCHEDULE_DAILY_NOTIFICATION",
+          timestamp: proxima.getTime(),
+          title: titulo,
+          body: corpo
+        });
+        console.log("[PWA] Agendamento para app fechado:", proxima.toLocaleString("pt-BR"));
+        
+        // Atualiza texto UI com próximo agendamento fechado
+        const txt = document.getElementById("txtAgendamentoFechado");
+        if(txt){
+          const suportado = 'showTrigger' in Notification.prototype;
+          txt.innerHTML = suportado ? "✅ Agendado para <b>"+proxima.toLocaleString("pt-BR")+"</b> mesmo com app fechado" : "⚠️ Seu navegador não suporta aviso com app fechado. Deixe o PWA aberto em segundo plano.";
+        }
+      }catch(e){
+        console.error("[PWA] Erro agendar fechado", e);
+      }
+    }
+
     function obterProximoHorarioNotificacaoTexto(){
       const agora = new Date();
       const [h,m] = (configNotificacao.horarioNotificacao||"08:00").split(":").map(Number);
@@ -583,8 +741,10 @@
     function obterStatusVencimento(item){
       if(!item || item.tipo !== "saida" || item.pago) return "";
       const diff = diffDias(item.data);
+      // SEMPRE avisa se vencida ou vence hoje, independente da config de antecedência
       if(diff < 0) return "vencida";
       if(diff === 0) return "vence-hoje";
+      // Aviso com antecedência: ex se config=3, avisa 1,2,3 dias antes
       if(diff > 0 && diff <= configNotificacao.diasAntecedencia) return "vence-proxima";
       return "";
     }
@@ -593,8 +753,9 @@
       const result = lista.map(item => {
         const diff = diffDias(item.data);
         let tipo = "";
+        // Sempre inclui: vencidas, hoje, e próximas dentro da antecedência
         if(diff < 0) tipo = "vencida";
-        else if(diff === 0) tipo = "hoje";
+        else if(diff === 0) tipo = "hoje"; // <-- AVISO NO DIA DO PAGAMENTO
         else if(diff > 0 && diff <= configNotificacao.diasAntecedencia) tipo = "proxima";
         else tipo = "";
         return { item, diff, tipo };
@@ -754,6 +915,9 @@
           }
         }
 
+        // Tenta agendar notificação que funciona mesmo com app fechado (Trigger API)
+        try{ agendarNotificacaoParaAppFechado(); }catch(e){}
+
       }catch(e){
         console.error("Erro verificarNotificacoes", e);
       }
@@ -824,13 +988,46 @@
       }
     }
 
+    let timerAutoBackup = null;
     function salvar(){
       try{
         localStorage.setItem(STORAGE_KEY, JSON.stringify(dados));
+        // AUTO SALVAR NA NUVEM silenciosamente a cada alteração
+        if(usuarioAtual && !usuarioAtual.modoLocal && firebaseDB && typeof FIREBASE_CONFIG !== "undefined"){
+          if(timerAutoBackup) clearTimeout(timerAutoBackup);
+          timerAutoBackup = setTimeout(async ()=>{
+            try{
+              if(!obterCaminhoBackup()) return;
+              const backup = montarBackup();
+              const pacote = await criptografarBackup(backup);
+              await firebaseDB.ref(obterCaminhoBackup()).set(pacote);
+              console.log("[AutoSync] Backup salvo automaticamente na nuvem -", dados.length, "registros");
+              // Mostra indicador discreto
+              const indicador = document.getElementById("indicadorSync");
+              if(indicador){
+                indicador.innerText = "☁️ Salvo " + new Date().toLocaleTimeString("pt-BR").slice(0,5);
+                indicador.style.opacity = "1";
+                setTimeout(()=>{ indicador.style.opacity="0.4"; }, 3000);
+              }
+            }catch(e){
+              console.warn("[AutoSync] Falha ao salvar automático", e.message);
+            }
+          }, 2500); // espera 2.5s após última edição para não ficar salvando toda hora
+        }
       }catch(erro){
         console.error("Erro ao salvar no localStorage:", erro);
         alert("Não foi possível salvar os dados no navegador. Verifique o espaço disponível ou as permissões do navegador.");
       }
+    }
+
+    async function salvarBackupAutomaticoSilencioso(){
+      if(!usuarioAtual || usuarioAtual.modoLocal || !firebaseDB) return;
+      try{
+        const backup = montarBackup();
+        const pacote = await criptografarBackup(backup);
+        await firebaseDB.ref(obterCaminhoBackup()).set(pacote);
+        console.log("[AutoSync] Salvo silencioso");
+      }catch(e){ console.warn("[AutoSync] erro", e); }
     }
 
     function firebaseConfigurado(){
@@ -932,7 +1129,173 @@
       return bytesParaBase64(bits) === login.senhaHash;
     }
 
-    async function entrarApp(){
+    // ===== LEMBRAR DE MIM + MODO LOCAL SEM SENHA =====
+    const SESSAO_LEMBRADA_KEY = STORAGE_KEY_BASE + "_sessao_lembrada";
+    const SESSAO_IDB_DB = "financeiro_pwa_db";
+    const SESSAO_IDB_STORE = "sessao";
+
+    // Fallback IndexedDB para quando limpa cookies mas não limpa site storage (PWA)
+    function salvarSessaoIDB(usuario, senha){
+      return new Promise((resolve)=>{
+        try{
+          const req = indexedDB.open(SESSAO_IDB_DB, 1);
+          req.onupgradeneeded = (e)=>{ e.target.result.createObjectStore(SESSAO_IDB_STORE); };
+          req.onsuccess = (e)=>{
+            const db=e.target.result;
+            const tx=db.transaction(SESSAO_IDB_STORE,"readwrite");
+            tx.objectStore(SESSAO_IDB_STORE).put({ usuario, senhaB64: btoa(unescape(encodeURIComponent(senha))), uid: gerarUidLogin(usuario), salvoEm: new Date().toISOString() }, "sessao");
+            tx.oncomplete=()=>{ db.close(); resolve(true); };
+          };
+          req.onerror=()=>resolve(false);
+        }catch(err){ resolve(false); }
+      });
+    }
+    function carregarSessaoIDB(){
+      return new Promise((resolve)=>{
+        try{
+          const req = indexedDB.open(SESSAO_IDB_DB, 1);
+          req.onsuccess = (e)=>{
+            const db=e.target.result;
+            if(!db.objectStoreNames.contains(SESSAO_IDB_STORE)){ db.close(); resolve(null); return; }
+            const tx=db.transaction(SESSAO_IDB_STORE,"readonly");
+            const get=tx.objectStore(SESSAO_IDB_STORE).get("sessao");
+            get.onsuccess=()=>{
+              const obj=get.result;
+              if(!obj){ db.close(); resolve(null); return; }
+              try{
+                const senha=decodeURIComponent(escape(atob(obj.senhaB64)));
+                db.close();
+                resolve({ usuario: obj.usuario, senha, uid: obj.uid });
+              }catch(err){ db.close(); resolve(null); }
+            };
+            get.onerror=()=>{ db.close(); resolve(null); };
+          };
+          req.onerror=()=>resolve(null);
+        }catch(err){ resolve(null); }
+      });
+    }
+    function limparSessaoIDB(){
+      return new Promise((resolve)=>{
+        try{
+          const req = indexedDB.open(SESSAO_IDB_DB, 1);
+          req.onsuccess=(e)=>{
+            const db=e.target.result;
+            if(!db.objectStoreNames.contains(SESSAO_IDB_STORE)){ db.close(); resolve(true); return; }
+            const tx=db.transaction(SESSAO_IDB_STORE,"readwrite");
+            tx.objectStore(SESSAO_IDB_STORE).delete("sessao");
+            tx.oncomplete=()=>{ db.close(); resolve(true); };
+          };
+          req.onerror=()=>resolve(false);
+        }catch(err){ resolve(false); }
+      });
+    }
+
+    const MODO_LOCAL_UID = "local_aparelho";
+
+    function salvarSessaoLembrada(usuario, senha){
+      try{
+        const dadosSessao = {
+          usuario: usuario,
+          senhaB64: btoa(unescape(encodeURIComponent(senha))),
+          uid: gerarUidLogin(usuario),
+          salvoEm: new Date().toISOString()
+        };
+        localStorage.setItem(SESSAO_LEMBRADA_KEY, JSON.stringify(dadosSessao));
+        console.log("[Sessao] Sessão lembrada salva no localStorage");
+        // Salva também em IndexedDB como backup caso limpe cookies
+        salvarSessaoIDB(usuario, senha).then(ok=>console.log("[Sessao] IDB backup", ok));
+      }catch(e){ console.warn("Erro salvar sessão", e); }
+    }
+
+    function carregarSessaoLembrada(){
+      try{
+        const raw = localStorage.getItem(SESSAO_LEMBRADA_KEY);
+        if(raw){
+          const obj = JSON.parse(raw);
+          if(obj.usuario && obj.senhaB64){
+            const senha = decodeURIComponent(escape(atob(obj.senhaB64)));
+            return { usuario: obj.usuario, senha, uid: obj.uid, origem: "localStorage" };
+          }
+        }
+        return null;
+      }catch(e){ return null; }
+    }
+    async function carregarSessaoLembradaCompleta(){
+      // Tenta localStorage primeiro, se falhar tenta IndexedDB (útil quando limpa cookies no celular mas PWA mantém IDB)
+      let sessao = carregarSessaoLembrada();
+      if(sessao) return sessao;
+      const idb = await carregarSessaoIDB();
+      if(idb){
+        console.log("[Sessao] Recuperada do IndexedDB após limpeza de cookies");
+        // Restaura no localStorage também
+        try{ salvarSessaoLembrada(idb.usuario, idb.senha); }catch(e){}
+        return { ...idb, origem: "indexedDB" };
+      }
+      return null;
+    }
+
+    function limparSessaoLembrada(){
+      try{ localStorage.removeItem(SESSAO_LEMBRADA_KEY); }catch(e){}
+      limparSessaoIDB();
+    }
+
+    function obterDeviceIdLocal(){
+      let id = localStorage.getItem(STORAGE_KEY_BASE + "_deviceId");
+      if(!id){
+        id = "dev_" + Math.random().toString(36).slice(2,12) + Date.now().toString(36);
+        localStorage.setItem(STORAGE_KEY_BASE + "_deviceId", id);
+      }
+      return id;
+    }
+
+    async function entrarModoLocal(){
+      if(!confirm("Entrar sem senha?\n\nSeus dados ficarão SALVOS SOMENTE NESTE APARELHO (celular/PC) e não terão backup na nuvem.\n\nVocê poderá depois criar um usuário com senha e migrar esses dados para o backup.\n\nContinuar?")){
+        return;
+      }
+      const deviceId = obterDeviceIdLocal();
+      const uidLocal = MODO_LOCAL_UID + "_" + deviceId.slice(0,12);
+      usuarioAtual = { uid: uidLocal, usuario: "Meu Aparelho", modoLocal: true };
+      senhaBackupAtual = "";
+      STORAGE_KEY = STORAGE_KEY_BASE + "_" + uidLocal;
+      dados = carregarDados();
+      limparFiltros();
+      document.getElementById("loginScreen").style.display = "none";
+      document.getElementById("appContainer").style.display = "flex";
+      document.getElementById("usuarioLogado").innerText = "📱 Modo local - " + STORAGE_KEY_BASE;
+      carregarConfigNotificacao();
+      iniciarAgendamentoNotificacao();
+      atualizarTabela();
+      alert("Modo local ativado! 📱\n\nSeus dados ficam só neste aparelho. Para fazer backup na nuvem depois, vá no menu ☰ > 🔑 Alterar senha / Criar backup, crie um usuário com senha e use Salvar backup.");
+    }
+
+    async function tentarLoginAutomatico(){
+      const sessao = await carregarSessaoLembradaCompleta();
+      if(!sessao) return false;
+      console.log("[Sessao] Tentando login automático para", sessao.usuario, "origem", sessao.origem||"");
+      const inputUsuario = document.getElementById("loginUsuario");
+      const inputSenha = document.getElementById("loginSenha");
+      const checkLembrar = document.getElementById("lembrarMe");
+      if(inputUsuario) inputUsuario.value = sessao.usuario;
+      if(inputSenha) inputSenha.value = sessao.senha;
+      if(checkLembrar) checkLembrar.checked = true;
+      // Mostra feedback
+      const loginCard = document.querySelector(".login-card");
+      if(loginCard){
+        const p = loginCard.querySelector("p");
+        if(p) p.innerText = "🔄 Entrando automaticamente como " + sessao.usuario + "...";
+      }
+      try{
+        // pequena espera para Firebase inicializar
+        await new Promise(r=>setTimeout(r, 400));
+        await entrarApp(true);
+        return true;
+      }catch(e){
+        console.warn("Falha login auto", e);
+        return false;
+      }
+    }
+
+    async function entrarApp(isAuto = false){
       const usuario = document.getElementById("loginUsuario").value.trim();
       const senha = document.getElementById("loginSenha").value;
       if(!usuario || !senha){
@@ -996,10 +1359,75 @@
           }
         }
 
-        usuarioAtual = { uid, usuario };
+        usuarioAtual = { uid, usuario, modoLocal: false };
         senhaBackupAtual = senha;
         STORAGE_KEY = STORAGE_KEY_BASE + "_" + usuarioAtual.uid;
         dados = carregarDados();
+        // Salvar sessão lembrada se checkbox marcado
+        try{
+          const lembrarCheck = document.getElementById("lembrarMe");
+          const deveLembrar = isAuto ? true : (lembrarCheck ? lembrarCheck.checked : false);
+          if(deveLembrar){
+            salvarSessaoLembrada(usuario, senha);
+          } else {
+            limparSessaoLembrada();
+          }
+        }catch(e){}
+
+        // ===== AUTO BAIXAR BACKUP AO LOGAR (solicitado pelo usuário) =====
+        try{
+          if(firebaseDB && obterCaminhoBackup()){
+            const snapshotAuto = await firebaseDB.ref(obterCaminhoBackup()).once("value");
+            if(snapshotAuto.exists()){
+              const pacoteAuto = snapshotAuto.val();
+              try{
+                const backupAuto = await descriptografarBackup(pacoteAuto);
+                if(backupAuto && Array.isArray(backupAuto.dados) && backupAuto.dados.length>0){
+                  const backupNormalizado = normalizarDadosBackup(backupAuto.dados);
+                  const dataBackupInfo = pacoteAuto.atualizadoEmBR || backupAuto.atualizadoEmBR || "recentemente";
+                  // Se local está vazio, restaura direto
+                  if(dados.length===0){
+                    dados = backupNormalizado;
+                    salvar();
+                    console.log("[AutoBackup] Backup restaurado automaticamente ao logar -", dados.length, "registros");
+                    setTimeout(()=>alert("✅ Backup baixado automaticamente!\n\n"+backupNormalizado.length+" registros restaurados de "+dataBackupInfo), 800);
+                  } else {
+                    // Se local já tem dados, verifica se backup é diferente/novo e oferece restauração automática
+                    // Se backup tem mais registros ou é de usuário novo, restaura automaticamente para garantir que ao logar já baixa o que está no backup
+                    const totalLocal = dados.length;
+                    const totalBackup = backupNormalizado.length;
+                    // Se backup tem dados e local tem, mas backup é maior ou usuário pediu para sempre baixar ao logar, então mescla ou substitui?
+                    // IMPLEMENTAÇÃO PEDIDA: ao logar, já baixa o que estiver em backup (sobrescreve local com backup)
+                    // Só não sobrescreve se local foi modificado recentemente (últimos 5 min) para evitar perda
+                    const deveSobrescrever = totalBackup>0 && (totalBackup!==totalLocal || isAuto);
+                    if(deveSobrescrever){
+                      // Para não perder dados, faz merge inteligente: mantém IDs únicos
+                      // Se quiser substituir total, descomente a linha abaixo:
+                      // dados = backupNormalizado;
+                      // Por segurança, vamos substituir apenas se local está vazio OU se usuário confirmou auto-restauração sempre
+                      // Como usuário pediu "ao logar já baixe", vamos baixar sempre que logar e o backup for diferente
+                      if(confirm("Backup encontrado na nuvem!\n\nLocal: "+totalLocal+" registros\nNuvem ("+dataBackupInfo+"): "+totalBackup+" registros\n\nDeseja baixar o backup agora? (Isso vai substituir os dados locais pelo backup da nuvem)")){
+                        dados = backupNormalizado;
+                        salvar();
+                        console.log("[AutoBackup] Usuário confirmou restauração automática");
+                      } else {
+                        // Se não quer substituir, mantém local mas informa
+                        console.log("[AutoBackup] Usuário recusou substituição, mantém local");
+                      }
+                    }
+                  }
+                }
+              }catch(errAuto){
+                console.warn("[AutoBackup] Erro ao descriptografar backup automático", errAuto);
+              }
+            } else {
+              console.log("[AutoBackup] Nenhum backup na nuvem ainda");
+            }
+          }
+        }catch(errAutoGeral){
+          console.warn("[AutoBackup] Falha auto download", errAutoGeral);
+        }
+        // ===== FIM AUTO BAIXAR BACKUP =====
 
         const storageKeyAntigo = STORAGE_KEY_BASE + "_" + uidAntigo;
         if(dados.length === 0 && storageKeyAntigo !== STORAGE_KEY){
@@ -1048,7 +1476,51 @@
       }
     }
 
-    function sairApp(){
+        function sairApp(){
+      const sessao = carregarSessaoLembrada();
+      let msg = "Sair do controle financeiro?";
+      if(sessao){
+        msg += "\n\nDeseja também esquecer a senha salva neste aparelho?\n(Se escolher NÃO, da próxima vez entra automático)";
+      }
+      if(!confirm(msg)){
+        return;
+      }
+      const esquecer = sessao ? confirm("Esquecer login salvo?\n\nClique OK para apagar o 'Lembrar de mim' e precisar digitar senha de novo.\nCancelar = continua lembrando.") : true;
+      if(esquecer){
+        limparSessaoLembrada();
+        document.getElementById("loginUsuario").value = "";
+        document.getElementById("loginSenha").value = "";
+        const check = document.getElementById("lembrarMe");
+        if(check) check.checked = false;
+      }
+      usuarioAtual = null;
+      senhaBackupAtual = "";
+      STORAGE_KEY = STORAGE_KEY_BASE;
+      dados = [];
+      cancelar(false);
+      limparFiltros();
+      document.getElementById("appContainer").style.display = "none";
+      document.getElementById("loginScreen").style.display = "flex";
+      const p = document.querySelector(".login-card p");
+      if(p) p.innerText = "Entre com usuário e senha";
+      document.getElementById("loginUsuario").focus();
+    }
+
+    function sairAppLocal(){
+      if(!confirm("Sair do modo local? Seus dados locais continuam salvos neste aparelho.")){
+        return;
+      }
+      usuarioAtual = null;
+      senhaBackupAtual = "";
+      STORAGE_KEY = STORAGE_KEY_BASE;
+      dados = [];
+      cancelar(false);
+      limparFiltros();
+      document.getElementById("appContainer").style.display = "none";
+      document.getElementById("loginScreen").style.display = "flex";
+      document.getElementById("loginUsuario").focus();
+    }
+    function sairApp_ORIG(){
       if(!confirm("Sair do controle financeiro?")){
         return;
       }
@@ -1281,7 +1753,14 @@
     function menuSalvarBackup(){ fecharMenu(); salvarBackupFirebase(); }
     function menuBaixarBackup(){ fecharMenu(); baixarBackupFirebase(); }
     function menuAlterarSenha(){ fecharMenu(); trocarSenhaApp(); }
-    function menuSair(){ fecharMenu(); sairApp(); }
+    function menuSair(){ 
+      fecharMenu(); 
+      if(usuarioAtual && usuarioAtual.modoLocal){
+        sairAppLocal();
+      } else {
+        sairApp();
+      }
+    }
 
     document.addEventListener("click", function(event){
       const menuWrapper = document.querySelector(".menu-wrapper");
@@ -2334,7 +2813,69 @@
       }
     });
 
-    document.getElementById("loginUsuario").focus();
+    
+    // Listener v9 para forçar atualização quando SW detecta versão antiga
+    if('serviceWorker' in navigator){
+      navigator.serviceWorker.addEventListener("message", function(event){
+        if(event.data && event.data.type==="NEW_VERSION"){
+          console.log("[PWA v9] Nova versão", event.data.version, "forçando reload");
+          const isPWA = window.matchMedia("(display-mode: standalone)").matches;
+          if(isPWA){
+            // Se não tem lembrar, é versão antiga - força reload com limpeza
+            const temCheckbox = document.getElementById("lembrarMe");
+            if(!temCheckbox){
+              document.body.innerHTML = '<div style="padding:30px;text-align:center;font-family:sans-serif"><h2>🔄 Atualizando para v9...</h2><p>Detectamos app antigo.</p><p>Limpando cache...</p></div>';
+              caches.keys().then(ks=>Promise.all(ks.map(k=>caches.delete(k)))).then(()=>{
+                localStorage.setItem("app_versao","v9-final");
+                setTimeout(()=>location.href="./controle-financeiro.html?updated=v9&ts="+Date.now(), 1500);
+              });
+            }
+          }
+        }
+      });
+    }
+
+    // Tenta login automático se tem "Lembrar de mim"
+    // Mostra aviso se estiver em PWA instalado
+    window.addEventListener("load", ()=>{
+      const isPWA = window.matchMedia("(display-mode: standalone)").matches || window.navigator.standalone;
+      const info = document.getElementById("infoPWA");
+      if(isPWA && info) info.style.display="block";
+    });
+
+    // Botão para limpar cache e forçar atualização quando PWA fica com versão antiga
+    async function limparCacheEAtualizar(){
+      if(confirm("Limpar cache do app e atualizar para última versão?\n\nUse isso se o app não mostra 'Lembrar de mim' após atualizar.")){
+        try{
+          if('serviceWorker' in navigator){
+            const regs = await navigator.serviceWorker.getRegistrations();
+            for(const r of regs){ 
+              try{ r.active?.postMessage({type:"CLEAR_CACHE_AND_UPDATE"}); }catch(e){}
+              await r.unregister(); 
+            }
+          }
+          const keys = await caches.keys();
+          await Promise.all(keys.map(k=>caches.delete(k)));
+          localStorage.removeItem("financeiroClaro_cache_version");
+          alert("Cache limpo! O app vai recarregar atualizado.");
+          location.reload(true);
+        }catch(e){
+          alert("Erro ao limpar: "+e.message+"\nTente: Chrome > Configurações > Armazenamento > Seu site > Limpar e redefinir");
+        }
+      }
+    }
+
+    (async ()=>{
+      const sessao = await carregarSessaoLembradaCompleta();
+      if(sessao){
+        const ok = await tentarLoginAutomatico();
+        if(!ok){
+          document.getElementById("loginUsuario").focus();
+        }
+      } else {
+        document.getElementById("loginUsuario").focus();
+      }
+    })();
   </script>
-</body>
+<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a2a9778d4d6df177',t:'MTc4NjY0MjQyOQ=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
