@@ -335,7 +335,7 @@
     
 
 <script>
-// Força atualização do WebAPK no Android - v11.1.2
+// Força atualização do WebAPK no Android - v12.2
 (function(){
   if('serviceWorker' in navigator){
     navigator.serviceWorker.ready.then(function(reg){
@@ -347,10 +347,10 @@
     const badge = document.querySelector("#versaoApp") || document.querySelector("div[style*='v9']");
     if(isPWA){
       const currentVersion = localStorage.getItem("app_versao");
-      if(currentVersion && currentVersion !== "v11.1.2"){
-        console.log("[WebAPK] Versão antiga detectada:", currentVersion, "-> v11.1.2, limpando");
+      if(currentVersion && currentVersion !== "v12.2"){
+        console.log("[WebAPK] Versão antiga detectada:", currentVersion, "-> v12.2, limpando");
         setTimeout(function(){
-          if(confirm("🔄 Nova versão v11.1.2 disponível! Seu app está na "+currentVersion+". Atualizar agora?")){
+          if(confirm("🔄 Nova versão v12.2 disponível! Seu app está na "+currentVersion+". Atualizar agora?")){
             caches.keys().then(function(keys){ return Promise.all(keys.map(function(k){return caches.delete(k)})); }).then(function(){
               location.href = "./?v=9.4&forceUpdate="+Date.now();
             });
@@ -367,7 +367,7 @@
   <script>
     // FORÇA ATUALIZAÇÃO DO PWA SE VERSÃO ANTIGA SEM LEMBRAR
     (function(){
-      const VERSAO_ATUAL = "v11.1.2";
+      const VERSAO_ATUAL = "v12.2";
       const versaoSalva = localStorage.getItem("app_versao");
       const precisaAtualizar = versaoSalva !== VERSAO_ATUAL;
       const temLembrar = !!document.getElementById && true; // será checado após DOM
@@ -412,7 +412,7 @@
     })();
   </script>
   <div id="loginScreen" class="login-screen">
-    <div class="login-card"><div style="position:absolute;top:10px;right:12px;font-size:10px;color:#64748b;background:#f1f5f9;padding:2px 6px;border-radius:6px">v11.1.2</div>
+    <div class="login-card"><div style="position:absolute;top:10px;right:12px;font-size:10px;color:#64748b;background:#f1f5f9;padding:2px 6px;border-radius:6px">v12.2</div>
       <h2>💰 Controle Financeiro</h2>
       <p>Entre com usuário e senha</p>
       <input type="text" id="loginUsuario" placeholder="Usuário" autocomplete="username">
@@ -545,6 +545,7 @@
       <div style="display:flex;gap:6px">
         <button onclick="salvarConfigNotificacaoUI()" style="background:#16a34a;color:white;padding:10px 14px;border-radius:8px;font-weight:bold;flex:1">💾 Salvar</button>
         <button onclick="testarNotificacaoAgora()" style="background:#0ea5e9;color:white;padding:10px 14px;border-radius:8px;font-weight:bold;flex:1">🔔 Testar</button>
+        <button onclick="inicializarFCMPush().then(t=>{ if(t) alert('✅ Push Ativado! Token salvo. Agora o servidor pode te enviar notificação mesmo com app fechado.'); else alert('Falha ao ativar Push. Verifique permissão e VAPID KEY'); })" style="background:#7c3aed;color:white;padding:10px 14px;border-radius:8px;font-weight:bold;flex:1">🚀 Ativar Push Fechado</button>
       </div>
       <small style="display:block;margin-top:10px;color:#64748b">Notifica apenas nos dias que tiver conta vencida, hoje ou dentro dos dias configurados.</small>
     </div>
@@ -572,6 +573,7 @@
   <!-- Firebase SDK compatível com onclick global. Necessita internet ao abrir o HTML no navegador. -->
   <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-database-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-messaging-compat.js"></script>
   <script>
     const STORAGE_KEY_BASE = "financeiroClaro";
     let STORAGE_KEY = STORAGE_KEY_BASE;
@@ -944,7 +946,7 @@
               body: corpo,
               icon: "./icon-192.png",
               badge: "./icon-96.png",
-              tag: "teste-agora-v11.1.2",
+              tag: "teste-agora-v12.2",
               vibrate: [200, 100, 200],
               requireInteraction: false,
               data: { url: "./" }
@@ -972,7 +974,7 @@
       };
 
       const executarTeste = async ()=>{
-        const titulo = "🔔 Teste v11.1.2" + (isAndroid ? " - Android" : " - PC");
+        const titulo = "🔔 Teste v12.2" + (isAndroid ? " - Android" : " - PC");
         const corpo = isAndroid ? "Se aparecer na barra superior, está funcionando! Deslize de cima para baixo para ver." : "Se você está vendo este pop-up no canto inferior direito, as notificações estão funcionando!";
         
         let ok = false;
@@ -1050,7 +1052,7 @@ function testarNotificacaoAgoraOLD(){
       } else {
         // granted - manda teste na hora
         const vencs = obterVencimentosProximos();
-        const ok = enviarTesteDireto("🔔 Teste - v11.1.2", vencs.length>0 ? "Funcionando! Você tem "+vencs.length+" conta(s) a vencer hoje" : "Se você está vendo este pop-up, as notificações estão funcionando! (teste sem contas)");
+        const ok = enviarTesteDireto("🔔 Teste - v12.2", vencs.length>0 ? "Funcionando! Você tem "+vencs.length+" conta(s) a vencer hoje" : "Se você está vendo este pop-up, as notificações estão funcionando! (teste sem contas)");
         if(ok){
           alert("✅ Teste enviado direto!\n\nSe não apareceu:\n- PC: Win+N para abrir central de notificações\n- Celular: deslize de cima para baixo\n- Verifique se Chrome tem permissão nas configurações do Android");
         } else {
@@ -1388,6 +1390,8 @@ function testarNotificacaoAgoraOLD(){
               const pacote = await criptografarBackup(backup);
               await firebaseDB.ref(obterCaminhoBackup()).set(pacote);
               console.log("[AutoSync] Backup salvo automaticamente na nuvem -", dados.length, "registros");
+              // Sincroniza resumo para servidor Push fechado
+              sincronizarDadosParaPushServidor();
               // Mostra indicador discreto
               const indicador = document.getElementById("indicadorSync");
               if(indicador){
@@ -1424,6 +1428,10 @@ function testarNotificacaoAgoraOLD(){
       }) && Boolean(FIREBASE_CONFIG.databaseURL);
     }
 
+    let firebaseMessaging = null;
+    let fcmTokenAtual = null;
+    const VAPID_KEY = "BEl62iUYgUivxIkv69yViEuiBIa-Ib9-SkvMeAtA3LFgDzkrxZJjSgSnfWSjF3vcq5QJv3R4c7iZ2X7a8b9c0d1e2f"; // SUBSTITUA PELA SUA CHAVE DO FIREBASE CONSOLE > Project Settings > Cloud Messaging > Web Push certificates
+
     function inicializarFirebase(silencioso = false){
       if(!firebaseConfigurado()){
         if(!silencioso){
@@ -1442,6 +1450,11 @@ function testarNotificacaoAgoraOLD(){
           firebase.initializeApp(FIREBASE_CONFIG);
         }
         firebaseDB = firebase.database();
+        try{
+          if(firebase.messaging && Notification.permission==="granted"){
+            firebaseMessaging = firebase.messaging();
+          }
+        }catch(e){ console.warn("FCM init", e); }
         return true;
       }catch(erro){
         console.error("Erro ao inicializar Firebase:", erro);
@@ -1451,6 +1464,99 @@ function testarNotificacaoAgoraOLD(){
         return false;
       }
     }
+
+    async function inicializarFCMPush(){
+      try{
+        if(!firebaseDB || !usuarioAtual){
+          console.log("[FCM] Sem usuário logado para FCM");
+          return null;
+        }
+        if(!("Notification" in window)){
+          console.log("[FCM] Navegador sem Notification");
+          return null;
+        }
+        if(Notification.permission!=="granted"){
+          console.log("[FCM] Permissão não concedida:", Notification.permission);
+          return null;
+        }
+        if(typeof firebase === "undefined" || !firebase.messaging){
+          console.log("[FCM] Messaging não disponível");
+          return null;
+        }
+        if(!firebaseMessaging){
+          firebaseMessaging = firebase.messaging();
+        }
+        // Solicita token FCM
+        const token = await firebaseMessaging.getToken({vapidKey: VAPID_KEY});
+        if(token){
+          console.log("[FCM] Token obtido:", token.slice(0,20)+"...");
+          fcmTokenAtual = token;
+          // Salva token no Realtime Database para o servidor poder enviar push mesmo fechado
+          const tokenPath = FIREBASE_BACKUP_BASE_PATH + "/" + usuarioAtual.uid + "/fcmTokens/" + token.replace(/[^a-zA-Z0-9-_]/g,"_").slice(0,80);
+          await firebaseDB.ref(tokenPath).set({
+            token: token,
+            usuario: usuarioAtual.usuario,
+            criadoEm: new Date().toISOString(),
+            userAgent: navigator.userAgent.slice(0,200),
+            plataforma: /Android/i.test(navigator.userAgent) ? "android" : /iPhone|iPad/i.test(navigator.userAgent) ? "ios" : "pc"
+          });
+          // Também salva config de notificação para o servidor saber horário e dias
+          await firebaseDB.ref(FIREBASE_BACKUP_BASE_PATH + "/" + usuarioAtual.uid + "/configNotificacao").set({
+            horario: configNotificacao.horarioNotificacao,
+            diasAntecedencia: configNotificacao.diasAntecedencia,
+            whatsappAtivo: !!configNotificacao.whatsappAtivo,
+            whatsappTelefone: configNotificacao.whatsappTelefone||"",
+            pushAtivo: !!configNotificacao.pushAtivo,
+            atualizadoEm: new Date().toISOString()
+          });
+          // Salva dados atuais (resumo não criptografado) para o servidor verificar vencimentos sem precisar senha
+          const resumoVencimentos = dados.filter(d=>d.tipo==="saida" && !d.pago).map(d=>({data:d.data, descricao:d.descricao, valor:d.valor})).slice(0,100);
+          await firebaseDB.ref(FIREBASE_BACKUP_BASE_PATH + "/" + usuarioAtual.uid + "/dadosResumo").set({
+            total: dados.length,
+            pendentes: resumoVencimentos,
+            atualizadoEm: new Date().toISOString()
+          });
+          console.log("[FCM] Token e dados salvos no Firebase para Push fechado");
+          
+          // Escuta mensagens em foreground
+          firebaseMessaging.onMessage((payload)=>{
+            console.log("[FCM] Push foreground recebido", payload);
+            const titulo = payload.notification?.title || payload.data?.title || "Controle Financeiro";
+            const corpo = payload.notification?.body || payload.data?.body || "Você tem contas a vencer!";
+            if(Notification.permission==="granted"){
+              new Notification(titulo, {body: corpo, icon: "./icon-192.png"});
+            }
+            // Atualiza lista
+            verificarNotificacoes(true);
+          });
+          
+          return token;
+        }
+      }catch(e){
+        console.error("[FCM] Erro ao inicializar Push", e);
+        if(e.message && e.message.includes("VAPID")){
+          console.warn("⚠️ Você precisa gerar VAPID KEY no Firebase Console > Project Settings > Cloud Messaging > Web Push certificates > Generate key pair e colar em VAPID_KEY no código");
+        }
+      }
+      return null;
+    }
+
+    async function sincronizarDadosParaPushServidor(){
+      if(!firebaseDB || !usuarioAtual) return;
+      try{
+        const resumo = dados.filter(d=>d.tipo==="saida" && !d.pago).map(d=>({data:d.data, descricao:d.descricao, valor:d.valor, id:d.id}));
+        await firebaseDB.ref(FIREBASE_BACKUP_BASE_PATH + "/" + usuarioAtual.uid + "/dadosResumo").set({
+          total: dados.length,
+          pendentes: resumo.slice(0,100),
+          atualizadoEm: new Date().toISOString()
+        });
+        await firebaseDB.ref(FIREBASE_BACKUP_BASE_PATH + "/" + usuarioAtual.uid + "/configNotificacao").update({
+          horario: configNotificacao.horarioNotificacao,
+          diasAntecedencia: configNotificacao.diasAntecedencia
+        });
+      }catch(e){ console.warn("Sync para push falhou", e); }
+    }
+
 
     function usuarioParaId(usuario){
       return usuario.trim().toLowerCase().normalize("NFD")
@@ -1848,6 +1954,8 @@ function testarNotificacaoAgoraOLD(){
         carregarConfigNotificacao();
         iniciarAgendamentoNotificacao();
         atualizarTabela();
+        // Inicializa FCM Push para funcionar fechado (Opção 2)
+        setTimeout(()=>{ inicializarFCMPush(); }, 1500);
         // Pede permissão de notificação automaticamente se configurado
         if(configNotificacao.pushAtivo && "Notification" in window && Notification.permission === "default"){
           setTimeout(()=>{ solicitarPermissaoNotificacao(); }, 1500);
@@ -3232,7 +3340,7 @@ function testarNotificacaoAgoraOLD(){
             if(!temCheckbox){
               document.body.innerHTML = '<div style="padding:30px;text-align:center;font-family:sans-serif"><h2>🔄 Atualizando para v9...</h2><p>Detectamos app antigo.</p><p>Limpando cache...</p></div>';
               caches.keys().then(ks=>Promise.all(ks.map(k=>caches.delete(k)))).then(()=>{
-                localStorage.setItem("app_versao","v11.1.2");
+                localStorage.setItem("app_versao","v12.2");
                 setTimeout(()=>location.href="./controle-financeiro.html?updated=v9&ts="+Date.now(), 1500);
               });
             }
@@ -3283,5 +3391,5 @@ function testarNotificacaoAgoraOLD(){
       }
     })();
   </script>
-<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a2b196421d190322',t:'MTc4NjcyNzU3Mg=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</body>
 </html>
