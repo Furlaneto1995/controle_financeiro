@@ -335,7 +335,7 @@
     
 
 <script>
-// Força atualização do WebAPK no Android - v10
+// Força atualização do WebAPK no Android - v10.1
 (function(){
   if('serviceWorker' in navigator){
     navigator.serviceWorker.ready.then(function(reg){
@@ -347,10 +347,10 @@
     const badge = document.querySelector("#versaoApp") || document.querySelector("div[style*='v9']");
     if(isPWA){
       const currentVersion = localStorage.getItem("app_versao");
-      if(currentVersion && currentVersion !== "v10"){
-        console.log("[WebAPK] Versão antiga detectada:", currentVersion, "-> v10, limpando");
+      if(currentVersion && currentVersion !== "v10.1"){
+        console.log("[WebAPK] Versão antiga detectada:", currentVersion, "-> v10.1, limpando");
         setTimeout(function(){
-          if(confirm("🔄 Nova versão v10 disponível! Seu app está na "+currentVersion+". Atualizar agora?")){
+          if(confirm("🔄 Nova versão v10.1 disponível! Seu app está na "+currentVersion+". Atualizar agora?")){
             caches.keys().then(function(keys){ return Promise.all(keys.map(function(k){return caches.delete(k)})); }).then(function(){
               location.href = "./?v=9.4&forceUpdate="+Date.now();
             });
@@ -367,7 +367,7 @@
   <script>
     // FORÇA ATUALIZAÇÃO DO PWA SE VERSÃO ANTIGA SEM LEMBRAR
     (function(){
-      const VERSAO_ATUAL = "v10";
+      const VERSAO_ATUAL = "v10.1";
       const versaoSalva = localStorage.getItem("app_versao");
       const precisaAtualizar = versaoSalva !== VERSAO_ATUAL;
       const temLembrar = !!document.getElementById && true; // será checado após DOM
@@ -412,7 +412,7 @@
     })();
   </script>
   <div id="loginScreen" class="login-screen">
-    <div class="login-card"><div style="position:absolute;top:10px;right:12px;font-size:10px;color:#64748b;background:#f1f5f9;padding:2px 6px;border-radius:6px">v10</div>
+    <div class="login-card"><div style="position:absolute;top:10px;right:12px;font-size:10px;color:#64748b;background:#f1f5f9;padding:2px 6px;border-radius:6px">v10.1</div>
       <h2>💰 Controle Financeiro</h2>
       <p>Entre com usuário e senha</p>
       <input type="text" id="loginUsuario" placeholder="Usuário" autocomplete="username">
@@ -535,8 +535,17 @@
         <div style="margin-top:6px;display:flex;flex-direction:column;gap:4px">
           <input type="text" id="configWhatsappTel" placeholder="Telefone com DDI ex: 5541999999999" style="height:32px">
           <input type="text" id="configWhatsappKey" placeholder="Apikey do CallMeBot ex: 123456" style="height:32px">
-          <small style="color:#64748b;line-height:1.2">Como ativar:<br>1) Salve +34 644 10 53 84 nos contatos como CallMeBot<br>2) Mande no WhatsApp para ele: <b>I allow callmebot to send me messages</b><br>3) Ele responde com apikey - cole acima<br>4) Teste com botão abaixo</small>
+          <small style="color:#64748b;line-height:1.2">Como ativar (número muda, tente na ordem):<br>1) Salve <b>+34 644 71 81 99</b> ou <b>+34 613 01 49 37</b> ou <b>+34 698 28 89 73</b> como CallMeBot<br>2) Mande: <b>I allow callmebot to send me messages</b><br>3) Ele responde com apikey - cole acima<br>Se nenhum tiver WhatsApp, use Telegram abaixo que é 100% confiável</small>
           <button onclick="testarWhatsApp()" style="background:#25D366;color:white;padding:6px 10px;border-radius:7px;font-weight:bold;font-size:12px">📱 Testar WhatsApp</button>
+        </div>
+      </div>
+      <div style="margin:10px 0;padding:10px;background:#eff6ff;border:1px solid #bfdbfe;border-radius:10px">
+        <label style="color:#1d4ed8"><input type="checkbox" id="toggleTelegram"> ✈️ Telegram (mais confiável que WhatsApp, grátis)</label>
+        <div style="margin-top:6px;display:flex;flex-direction:column;gap:4px">
+          <input type="text" id="configTelegramToken" placeholder="Bot Token ex: 123456:ABC-DEF..." style="height:32px">
+          <input type="text" id="configTelegramChat" placeholder="Chat ID ex: 123456789" style="height:32px">
+          <small style="color:#64748b;line-height:1.2">Como ativar Telegram (2 min, sempre funciona):<br>1) No Telegram fale com @BotFather > /newbot > nome > recebe token<br>2) Fale com seu bot criado, mande /start<br>3) Abra https://api.telegram.org/botSEU_TOKEN/getUpdates e pegue chat.id<br>4) Cole acima</small>
+          <button onclick="testarTelegram()" style="background:#0088cc;color:white;padding:6px 10px;border-radius:7px;font-weight:bold;font-size:12px">✈️ Testar Telegram</button>
         </div>
       </div>
       <div style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap">
@@ -595,7 +604,10 @@
       ultimoAvisoHorario: "",
       whatsappAtivo: false,
       whatsappTelefone: "",
-      whatsappApikey: ""
+      whatsappApikey: "",
+      telegramAtivo: false,
+      telegramToken: "",
+      telegramChatId: ""
     };
     let timerAgendamentoNotificacao = null;
 
@@ -624,12 +636,21 @@
       const inputWppTel = document.getElementById("configWhatsappTel");
       const inputWppKey = document.getElementById("configWhatsappKey");
       const toggleWpp = document.getElementById("toggleWhatsapp");
+      const inputTgToken = document.getElementById("configTelegramToken");
+      const inputTgChat = document.getElementById("configTelegramChat");
+      const toggleTg = document.getElementById("toggleTelegram");
+      const inputTgToken = document.getElementById("configTelegramToken");
+      const inputTgChat = document.getElementById("configTelegramChat");
+      const toggleTg = document.getElementById("toggleTelegram");
       if(inputDias) inputDias.value = configNotificacao.diasAntecedencia;
       if(togglePush) togglePush.checked = configNotificacao.pushAtivo;
       if(inputHorario) inputHorario.value = configNotificacao.horarioNotificacao;
       if(inputWppTel) inputWppTel.value = configNotificacao.whatsappTelefone || "";
       if(inputWppKey) inputWppKey.value = configNotificacao.whatsappApikey || "";
       if(toggleWpp) toggleWpp.checked = !!configNotificacao.whatsappAtivo;
+      if(inputTgToken) inputTgToken.value = configNotificacao.telegramToken || "";
+      if(inputTgChat) inputTgChat.value = configNotificacao.telegramChatId || "";
+      if(toggleTg) toggleTg.checked = !!configNotificacao.telegramAtivo;
     }
     function salvarConfigNotificacao(){
       try{
@@ -643,6 +664,12 @@
       const inputWppTel = document.getElementById("configWhatsappTel");
       const inputWppKey = document.getElementById("configWhatsappKey");
       const toggleWpp = document.getElementById("toggleWhatsapp");
+      const inputTgToken = document.getElementById("configTelegramToken");
+      const inputTgChat = document.getElementById("configTelegramChat");
+      const toggleTg = document.getElementById("toggleTelegram");
+      const inputTgToken = document.getElementById("configTelegramToken");
+      const inputTgChat = document.getElementById("configTelegramChat");
+      const toggleTg = document.getElementById("toggleTelegram");
       if(inputDias){
         configNotificacao.diasAntecedencia = Math.max(1, Math.min(30, Number(inputDias.value) || 3));
       }
@@ -660,6 +687,15 @@
       }
       if(toggleWpp){
         configNotificacao.whatsappAtivo = toggleWpp.checked;
+      }
+      if(inputTgToken){
+        configNotificacao.telegramToken = inputTgToken.value.trim();
+      }
+      if(inputTgChat){
+        configNotificacao.telegramChatId = inputTgChat.value.trim();
+      }
+      if(toggleTg){
+        configNotificacao.telegramAtivo = toggleTg.checked;
       }
       salvarConfigNotificacao();
       iniciarAgendamentoNotificacao();
@@ -770,6 +806,37 @@
 
 
     
+
+    async function enviarTelegramVencimentos(mensagem){
+      if(!configNotificacao.telegramAtivo) return false;
+      const token = configNotificacao.telegramToken;
+      const chatId = configNotificacao.telegramChatId;
+      if(!token || !chatId){ alert("Telegram ativado mas falta token ou chat ID"); return false; }
+      const url = "https://api.telegram.org/bot"+encodeURIComponent(token)+"/sendMessage";
+      try{
+        const resp = await fetch(url, {
+          method: "POST",
+          headers: {"Content-Type":"application/json"},
+          body: JSON.stringify({ chat_id: chatId, text: mensagem, parse_mode: "Markdown" })
+        });
+        const json = await resp.json();
+        console.log("[Telegram] Resposta", json);
+        return json.ok;
+      }catch(e){ console.error("[Telegram] Erro", e); return false; }
+    }
+    async function testarTelegram(){
+      const token = document.getElementById("configTelegramToken")?.value || configNotificacao.telegramToken;
+      const chatId = document.getElementById("configTelegramChat")?.value || configNotificacao.telegramChatId;
+      if(!token || !chatId){ alert("Preencha token e chat ID do Telegram"); return; }
+      configNotificacao.telegramToken = token.trim();
+      configNotificacao.telegramChatId = chatId.trim();
+      configNotificacao.telegramAtivo = true;
+      salvarConfigNotificacao();
+      const msg = "🔔 *Teste Controle Financeiro*\n\nSe recebeu, Telegram está funcionando! ✅";
+      const ok = await enviarTelegramVencimentos(msg);
+      alert(ok ? "✈️ Telegram enviado! Verifique seu Telegram" : "Falha. Verifique token e chat ID. Veja console.");
+    }
+
     async function enviarWhatsAppVencimentos(mensagem){
       if(!configNotificacao.whatsappAtivo){
         console.log("[WhatsApp] Desativado");
@@ -872,7 +939,7 @@
               body: corpo,
               icon: "./icon-192.png",
               badge: "./icon-96.png",
-              tag: "teste-agora-v10",
+              tag: "teste-agora-v10.1",
               vibrate: [200, 100, 200],
               requireInteraction: false,
               data: { url: "./" }
@@ -900,7 +967,7 @@
       };
 
       const executarTeste = async ()=>{
-        const titulo = "🔔 Teste v10" + (isAndroid ? " - Android" : " - PC");
+        const titulo = "🔔 Teste v10.1" + (isAndroid ? " - Android" : " - PC");
         const corpo = isAndroid ? "Se aparecer na barra superior, está funcionando! Deslize de cima para baixo para ver." : "Se você está vendo este pop-up no canto inferior direito, as notificações estão funcionando!";
         
         let ok = false;
@@ -978,7 +1045,7 @@ function testarNotificacaoAgoraOLD(){
       } else {
         // granted - manda teste na hora
         const vencs = obterVencimentosProximos();
-        const ok = enviarTesteDireto("🔔 Teste - v10", vencs.length>0 ? "Funcionando! Você tem "+vencs.length+" conta(s) a vencer hoje" : "Se você está vendo este pop-up, as notificações estão funcionando! (teste sem contas)");
+        const ok = enviarTesteDireto("🔔 Teste - v10.1", vencs.length>0 ? "Funcionando! Você tem "+vencs.length+" conta(s) a vencer hoje" : "Se você está vendo este pop-up, as notificações estão funcionando! (teste sem contas)");
         if(ok){
           alert("✅ Teste enviado direto!\n\nSe não apareceu:\n- PC: Win+N para abrir central de notificações\n- Celular: deslize de cima para baixo\n- Verifique se Chrome tem permissão nas configurações do Android");
         } else {
@@ -1220,16 +1287,16 @@ function testarNotificacaoAgoraOLD(){
         // Tenta agendar notificação que funciona mesmo com app fechado (Trigger API)
         try{ agendarNotificacaoParaAppFechado(); }catch(e){}
 
-        // Envia WhatsApp se ativado (mais confiável que notificação do navegador)
+        // Envia WhatsApp e Telegram se ativados
         try{
-          if(configNotificacao.whatsappAtivo && (count>0 || forcarPush)){
+          if((configNotificacao.whatsappAtivo || configNotificacao.telegramAtivo) && (count>0 || forcarPush)){
             const mensagem = montarMensagemWhatsApp(vencimentos);
-            // Só envia WhatsApp 1 vez por dia no horário agendado, ou se forçado
-            const jaEnviouWppHoje = localStorage.getItem("wpp_enviado_"+hojeISO+"_"+configNotificacao.horarioNotificacao);
-            if(forcarPush || !jaEnviouWppHoje){
-              await enviarWhatsAppVencimentos(mensagem);
+            const jaEnviouHoje = localStorage.getItem("wpp_enviado_"+hojeISO+"_"+configNotificacao.horarioNotificacao);
+            if(forcarPush || !jaEnviouHoje){
+              if(configNotificacao.whatsappAtivo) await enviarWhatsAppVencimentos(mensagem);
+              if(configNotificacao.telegramAtivo) await enviarTelegramVencimentos(mensagem);
               localStorage.setItem("wpp_enviado_"+hojeISO+"_"+configNotificacao.horarioNotificacao, "1");
-              console.log("[WhatsApp] Enviado no horário agendado");
+              console.log("[WhatsApp/Telegram] Enviado no horário");
             }
           }
         }catch(e){ console.warn("[WhatsApp] erro auto", e); }
@@ -3142,7 +3209,7 @@ function testarNotificacaoAgoraOLD(){
             if(!temCheckbox){
               document.body.innerHTML = '<div style="padding:30px;text-align:center;font-family:sans-serif"><h2>🔄 Atualizando para v9...</h2><p>Detectamos app antigo.</p><p>Limpando cache...</p></div>';
               caches.keys().then(ks=>Promise.all(ks.map(k=>caches.delete(k)))).then(()=>{
-                localStorage.setItem("app_versao","v10");
+                localStorage.setItem("app_versao","v10.1");
                 setTimeout(()=>location.href="./controle-financeiro.html?updated=v9&ts="+Date.now(), 1500);
               });
             }
@@ -3193,5 +3260,5 @@ function testarNotificacaoAgoraOLD(){
       }
     })();
   </script>
-<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a2b0aae34a63ad4a',t:'MTc4NjcxNzkzMg=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a2b0bbe93f4152b4',t:'MTc4NjcxODYyOQ=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
