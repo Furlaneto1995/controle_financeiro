@@ -2,7 +2,7 @@
   "name": "Controle Financeiro",
   "short_name": "Financeiro",
   "description": "Controle financeiro com sync automático",
-  "start_url": "./?v=9.8",
+  "start_url": "./?v=10.2",
   "display": "standalone",
   "background_color": "#2b4668",
   "theme_color": "#2b4668",
@@ -38,5 +38,5 @@
       "purpose": "maskable"
     }
   ],
-  "version": "9.8"
+  "version": "10.2"
 }
