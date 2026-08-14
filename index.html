@@ -335,7 +335,7 @@
     
 
 <script>
-// Força atualização do WebAPK no Android - v10.2.2
+// Força atualização do WebAPK no Android - v10.3.2
 (function(){
   if('serviceWorker' in navigator){
     navigator.serviceWorker.ready.then(function(reg){
@@ -347,10 +347,10 @@
     const badge = document.querySelector("#versaoApp") || document.querySelector("div[style*='v9']");
     if(isPWA){
       const currentVersion = localStorage.getItem("app_versao");
-      if(currentVersion && currentVersion !== "v10.2.2"){
-        console.log("[WebAPK] Versão antiga detectada:", currentVersion, "-> v10.2.2, limpando");
+      if(currentVersion && currentVersion !== "v10.3.2"){
+        console.log("[WebAPK] Versão antiga detectada:", currentVersion, "-> v10.3.2, limpando");
         setTimeout(function(){
-          if(confirm("🔄 Nova versão v10.2.2 disponível! Seu app está na "+currentVersion+". Atualizar agora?")){
+          if(confirm("🔄 Nova versão v10.3.2 disponível! Seu app está na "+currentVersion+". Atualizar agora?")){
             caches.keys().then(function(keys){ return Promise.all(keys.map(function(k){return caches.delete(k)})); }).then(function(){
               location.href = "./?v=9.4&forceUpdate="+Date.now();
             });
@@ -367,7 +367,7 @@
   <script>
     // FORÇA ATUALIZAÇÃO DO PWA SE VERSÃO ANTIGA SEM LEMBRAR
     (function(){
-      const VERSAO_ATUAL = "v10.2.2";
+      const VERSAO_ATUAL = "v10.3.2";
       const versaoSalva = localStorage.getItem("app_versao");
       const precisaAtualizar = versaoSalva !== VERSAO_ATUAL;
       const temLembrar = !!document.getElementById && true; // será checado após DOM
@@ -412,16 +412,16 @@
     })();
   </script>
   <div id="loginScreen" class="login-screen">
-    <div class="login-card"><div style="position:absolute;top:10px;right:12px;font-size:10px;color:#64748b;background:#f1f5f9;padding:2px 6px;border-radius:6px">v10.2.2</div>
+    <div class="login-card"><div style="position:absolute;top:10px;right:12px;font-size:10px;color:#64748b;background:#f1f5f9;padding:2px 6px;border-radius:6px">v10.3.2</div>
       <h2>💰 Controle Financeiro</h2>
       <p>Entre com usuário e senha</p>
       <input type="text" id="loginUsuario" placeholder="Usuário" autocomplete="username">
       <input type="password" id="loginSenha" placeholder="Senha" autocomplete="current-password" onkeydown="if(event.key==='Enter') entrarApp()">
       <label style="display:flex;align-items:center;gap:8px;margin:10px 0 10px;text-align:left;font-size:14px;color:#0f172a;cursor:pointer;font-weight:700;background:#f0fdf4;border:1px solid #bbf7d0;padding:8px 10px;border-radius:10px"><input type="checkbox" id="lembrarMe" checked style="width:20px;height:20px"> Lembrar de mim (não pedir senha de novo)</label>
-      <div id="infoPWA" style="display:none;font-size:11px;color:#2563eb;background:#eff6ff;border:1px solid #bfdbfe;padding:6px 8px;border-radius:8px;margin-bottom:8px;line-height:1.3">📲 Modo App Instalado - Se limpar cookies, faça login 1 vez com "Lembrar" marcado que volta a entrar sozinho.</div>
+      
       <button onclick="entrarApp()">Entrar</button>
       <button onclick="entrarModoLocal()" style="background:#f8fafc;color:#334155;border:1px solid #e2e8f0;margin-top:4px">📱 Continuar sem senha (só neste aparelho)</button>
-      <small>Use sempre o mesmo usuário e senha para conseguir baixar/decriptar seu backup.<br><span style="color:#16a34a">✔️ Com "Lembrar de mim" você só digita a senha na primeira vez.</span><br><a href="#" onclick="limparCacheEAtualizar();return false" style="color:#64748b;text-decoration:underline;font-size:11px">Se o app não atualiza, clique aqui para limpar cache</a></small>
+      <small style="color:#16a34a">✔️ Lembrar de mim: só pede senha na primeira vez</small>
     </div>
   </div>
   <div class="container" id="appContainer" style="display:none">
@@ -535,34 +535,22 @@
         <div style="margin-top:6px;display:flex;flex-direction:column;gap:4px">
           <input type="text" id="configWhatsappTel" placeholder="Telefone com DDI ex: 5541999999999" style="height:32px">
           <input type="text" id="configWhatsappKey" placeholder="Apikey do CallMeBot ex: 123456" style="height:32px">
-          <small style="color:#64748b;line-height:1.2">Como ativar (número muda, tente na ordem):<br>1) Salve <b>+34 644 71 81 99</b> ou <b>+34 613 01 49 37</b> ou <b>+34 698 28 89 73</b> como CallMeBot<br>2) Mande: <b>I allow callmebot to send me messages</b><br>3) Ele responde com apikey - cole acima<br>Se nenhum tiver WhatsApp, use Telegram abaixo que é 100% confiável</small>
+          <small style="color:#64748b">Telefone com DDI (ex: 5541...) + apikey do bot</small>
           <button onclick="testarWhatsApp()" style="background:#25D366;color:white;padding:6px 10px;border-radius:7px;font-weight:bold;font-size:12px">📱 Testar WhatsApp</button>
         </div>
       </div>
-      <div style="margin:10px 0;padding:10px;background:#eff6ff;border:1px solid #bfdbfe;border-radius:10px">
-        <label style="color:#1d4ed8"><input type="checkbox" id="toggleTelegram"> ✈️ Telegram (mais confiável que WhatsApp, grátis)</label>
-        <div style="margin-top:6px;display:flex;flex-direction:column;gap:4px">
-          <input type="text" id="configTelegramToken" placeholder="Bot Token ex: 123456:ABC-DEF..." style="height:32px">
-          <input type="text" id="configTelegramChat" placeholder="Chat ID ex: 123456789" style="height:32px">
-          <small style="color:#64748b;line-height:1.2">Como ativar Telegram (2 min, sempre funciona):<br>1) No Telegram fale com @BotFather > /newbot > nome > recebe token<br>2) Fale com seu bot criado, mande /start<br>3) Abra https://api.telegram.org/botSEU_TOKEN/getUpdates e pegue chat.id<br>4) Cole acima</small>
-          <button onclick="testarTelegram()" style="background:#0088cc;color:white;padding:6px 10px;border-radius:7px;font-weight:bold;font-size:12px">✈️ Testar Telegram</button>
-        </div>
-      </div>
+      
       <div style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap">
         <button onclick="salvarConfigNotificacaoUI()" style="background:#16a34a;color:white;padding:6px 10px;border-radius:7px;font-weight:bold;font-size:12px">💾 Salvar config</button>
         <button onclick="testarNotificacaoAgora()" style="background:#0ea5e9;color:white;padding:6px 10px;border-radius:7px;font-weight:bold;font-size:12px">🔔 Testar notificação</button>
         <button onclick="verificarNotificacoes(true)" style="background:#64748b;color:white;padding:6px 10px;border-radius:7px;font-weight:bold;font-size:12px">🔄 Verificar agora</button>
         <button onclick="filtrarStatusRapido('pendente');fecharPainelNotificacoes()" style="background:#f59e0b;color:white;padding:6px 10px;border-radius:7px;font-weight:bold;font-size:12px">👁️ Ver pendentes</button>
       </div>
-      <div id="avisoTrigger" style="display:none;padding:8px 10px;margin-top:8px;border-radius:8px;background:#fef3c7;border:1px solid #fde68a;color:#92400e;font-size:11px;line-height:1.3">
-        ⚠️ <b>Seu navegador não suporta aviso com app fechado.</b> No Chrome no PC, instale o PWA e deixe o Chrome rodando em segundo plano (Configurações > Sistema > Continuar executando apps em segundo plano). No modo atual o aviso funciona com o app aberto/minimizado.
-      </div>
-      <small id="txtAgendamentoFechado" style="display:block;margin-top:8px;color:#16a34a;font-weight:bold;font-size:11px;line-height:1.3"></small>
-      <small style="display:block;margin-top:6px;color:#64748b;line-height:1.3">💡 Dica PC: Instale o app (botão 📲) e no Chrome vá em <b>Configurações > Sistema > Continuar executando aplicativos em segundo plano quando o Google Chrome for fechado</b> = ATIVADO. Assim notifica mesmo fechado.</small>
+      <small id="txtAgendamentoFechado" style="display:block;margin-top:8px;color:#16a34a;font-weight:bold;font-size:11px"></small>
     </div>
   </div>
 
-  <button id="btnInstalarPWA" class="btn-instalar-pwa" onclick="instalarPWA()"><span>📲</span> Instalar App no PC/Celular</button>
+  <button id="btnInstalarPWA" class="btn-instalar-pwa" style="display:none!important" onclick="instalarPWA()"><span>📲</span> Instalar App no PC/Celular</button>
 
   <!-- Firebase SDK compatível com onclick global. Necessita internet ao abrir o HTML no navegador. -->
   <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
@@ -939,7 +927,7 @@
               body: corpo,
               icon: "./icon-192.png",
               badge: "./icon-96.png",
-              tag: "teste-agora-v10.2.2",
+              tag: "teste-agora-v10.3.2",
               vibrate: [200, 100, 200],
               requireInteraction: false,
               data: { url: "./" }
@@ -967,7 +955,7 @@
       };
 
       const executarTeste = async ()=>{
-        const titulo = "🔔 Teste v10.2.2" + (isAndroid ? " - Android" : " - PC");
+        const titulo = "🔔 Teste v10.3.2" + (isAndroid ? " - Android" : " - PC");
         const corpo = isAndroid ? "Se aparecer na barra superior, está funcionando! Deslize de cima para baixo para ver." : "Se você está vendo este pop-up no canto inferior direito, as notificações estão funcionando!";
         
         let ok = false;
@@ -1045,7 +1033,7 @@ function testarNotificacaoAgoraOLD(){
       } else {
         // granted - manda teste na hora
         const vencs = obterVencimentosProximos();
-        const ok = enviarTesteDireto("🔔 Teste - v10.2.2", vencs.length>0 ? "Funcionando! Você tem "+vencs.length+" conta(s) a vencer hoje" : "Se você está vendo este pop-up, as notificações estão funcionando! (teste sem contas)");
+        const ok = enviarTesteDireto("🔔 Teste - v10.3.2", vencs.length>0 ? "Funcionando! Você tem "+vencs.length+" conta(s) a vencer hoje" : "Se você está vendo este pop-up, as notificações estão funcionando! (teste sem contas)");
         if(ok){
           alert("✅ Teste enviado direto!\n\nSe não apareceu:\n- PC: Win+N para abrir central de notificações\n- Celular: deslize de cima para baixo\n- Verifique se Chrome tem permissão nas configurações do Android");
         } else {
@@ -3209,7 +3197,7 @@ function testarNotificacaoAgoraOLD(){
             if(!temCheckbox){
               document.body.innerHTML = '<div style="padding:30px;text-align:center;font-family:sans-serif"><h2>🔄 Atualizando para v9...</h2><p>Detectamos app antigo.</p><p>Limpando cache...</p></div>';
               caches.keys().then(ks=>Promise.all(ks.map(k=>caches.delete(k)))).then(()=>{
-                localStorage.setItem("app_versao","v10.2.2");
+                localStorage.setItem("app_versao","v10.3.2");
                 setTimeout(()=>location.href="./controle-financeiro.html?updated=v9&ts="+Date.now(), 1500);
               });
             }
@@ -3260,5 +3248,5 @@ function testarNotificacaoAgoraOLD(){
       }
     })();
   </script>
-<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a2b14bcac8a7f20c',t:'MTc4NjcyNDUyMg=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</body>
 </html>
