@@ -1,5 +1,5 @@
-/* Controle Financeiro PWA v12.2 - Web Push com Firebase Cloud Messaging */
-const CACHE_NAME = "financeiro-pwa-v12.2-push";
+/* Controle Financeiro PWA v12.3 - Web Push com Firebase Cloud Messaging */
+const CACHE_NAME = "financeiro-pwa-v12.3-push";
 const ICONS = ["./manifest.json","./icon-96.png","./icon-192.png","./icon-512.png"];
 
 importScripts("https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js");
@@ -37,12 +37,12 @@ try{
 }catch(e){ console.warn("[SW] FCM init falhou", e); }
 
 self.addEventListener("install", e=>{
-  console.log("[SW v12.2] Install");
+  console.log("[SW v12.3] Install");
   e.waitUntil(caches.open(CACHE_NAME).then(c=>c.addAll(ICONS)).then(()=>self.skipWaiting()));
 });
 
 self.addEventListener("activate", e=>{
-  console.log("[SW v12.2] Activate - limpando antigos");
+  console.log("[SW v12.3] Activate - limpando antigos");
   e.waitUntil(
     caches.keys().then(keys=>Promise.all(keys.filter(k=>k!==CACHE_NAME).map(k=>caches.delete(k))))
     .then(()=>self.clients.claim())
