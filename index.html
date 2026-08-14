@@ -335,7 +335,7 @@
     
 
 <script>
-// Força atualização do WebAPK no Android - v10.3.2
+// Força atualização do WebAPK no Android - v11.2
 (function(){
   if('serviceWorker' in navigator){
     navigator.serviceWorker.ready.then(function(reg){
@@ -347,10 +347,10 @@
     const badge = document.querySelector("#versaoApp") || document.querySelector("div[style*='v9']");
     if(isPWA){
       const currentVersion = localStorage.getItem("app_versao");
-      if(currentVersion && currentVersion !== "v10.3.2"){
-        console.log("[WebAPK] Versão antiga detectada:", currentVersion, "-> v10.3.2, limpando");
+      if(currentVersion && currentVersion !== "v11.2"){
+        console.log("[WebAPK] Versão antiga detectada:", currentVersion, "-> v11.2, limpando");
         setTimeout(function(){
-          if(confirm("🔄 Nova versão v10.3.2 disponível! Seu app está na "+currentVersion+". Atualizar agora?")){
+          if(confirm("🔄 Nova versão v11.2 disponível! Seu app está na "+currentVersion+". Atualizar agora?")){
             caches.keys().then(function(keys){ return Promise.all(keys.map(function(k){return caches.delete(k)})); }).then(function(){
               location.href = "./?v=9.4&forceUpdate="+Date.now();
             });
@@ -367,7 +367,7 @@
   <script>
     // FORÇA ATUALIZAÇÃO DO PWA SE VERSÃO ANTIGA SEM LEMBRAR
     (function(){
-      const VERSAO_ATUAL = "v10.3.2";
+      const VERSAO_ATUAL = "v11.2";
       const versaoSalva = localStorage.getItem("app_versao");
       const precisaAtualizar = versaoSalva !== VERSAO_ATUAL;
       const temLembrar = !!document.getElementById && true; // será checado após DOM
@@ -412,7 +412,7 @@
     })();
   </script>
   <div id="loginScreen" class="login-screen">
-    <div class="login-card"><div style="position:absolute;top:10px;right:12px;font-size:10px;color:#64748b;background:#f1f5f9;padding:2px 6px;border-radius:6px">v10.3.2</div>
+    <div class="login-card"><div style="position:absolute;top:10px;right:12px;font-size:10px;color:#64748b;background:#f1f5f9;padding:2px 6px;border-radius:6px">v11.2</div>
       <h2>💰 Controle Financeiro</h2>
       <p>Entre com usuário e senha</p>
       <input type="text" id="loginUsuario" placeholder="Usuário" autocomplete="username">
@@ -430,6 +430,9 @@
       <button class="mobile-add-toggle" onclick="toggleFormularioMobile(event)" title="Adicionar lançamento" aria-label="Adicionar lançamento">+</button>
       <button class="menu-toggle" onclick="toggleMenu(event)" title="Menu" aria-label="Abrir menu">☰</button>
       <div id="menuHamburger" class="menu-dropdown">
+        <button onclick="menuConfigNotificacao()">🔔 Config. Notificações</button>
+        <button onclick="menuConfigWhatsapp()">📱 Config. WhatsApp</button>
+        <div class="menu-separador"></div>
         <button id="btnBackupFirebase" onclick="menuSalvarBackup()">💾 Salvar backup</button>
         <button id="btnBaixarBackupFirebase" onclick="menuBaixarBackup()">⬇️ Baixar backup</button>
         <button onclick="menuAlterarSenha()">🔑 Alterar senha</button>
@@ -927,7 +930,7 @@
               body: corpo,
               icon: "./icon-192.png",
               badge: "./icon-96.png",
-              tag: "teste-agora-v10.3.2",
+              tag: "teste-agora-v11.2",
               vibrate: [200, 100, 200],
               requireInteraction: false,
               data: { url: "./" }
@@ -955,7 +958,7 @@
       };
 
       const executarTeste = async ()=>{
-        const titulo = "🔔 Teste v10.3.2" + (isAndroid ? " - Android" : " - PC");
+        const titulo = "🔔 Teste v11.2" + (isAndroid ? " - Android" : " - PC");
         const corpo = isAndroid ? "Se aparecer na barra superior, está funcionando! Deslize de cima para baixo para ver." : "Se você está vendo este pop-up no canto inferior direito, as notificações estão funcionando!";
         
         let ok = false;
@@ -1033,7 +1036,7 @@ function testarNotificacaoAgoraOLD(){
       } else {
         // granted - manda teste na hora
         const vencs = obterVencimentosProximos();
-        const ok = enviarTesteDireto("🔔 Teste - v10.3.2", vencs.length>0 ? "Funcionando! Você tem "+vencs.length+" conta(s) a vencer hoje" : "Se você está vendo este pop-up, as notificações estão funcionando! (teste sem contas)");
+        const ok = enviarTesteDireto("🔔 Teste - v11.2", vencs.length>0 ? "Funcionando! Você tem "+vencs.length+" conta(s) a vencer hoje" : "Se você está vendo este pop-up, as notificações estão funcionando! (teste sem contas)");
         if(ok){
           alert("✅ Teste enviado direto!\n\nSe não apareceu:\n- PC: Win+N para abrir central de notificações\n- Celular: deslize de cima para baixo\n- Verifique se Chrome tem permissão nas configurações do Android");
         } else {
@@ -1226,11 +1229,12 @@ function testarNotificacaoAgoraOLD(){
           }
         }
 
-        // Notificação push - CORRIGIDO: manda mesmo sem contas se for agendamento ou teste forçado
+        // Notificação apenas nos dias de antecedência programados (NÃO todos os dias)
         if(configNotificacao.pushAtivo && "Notification" in window && Notification.permission==="granted"){
           const jaNotificouHoje = configNotificacao.ultimoAvisoData === hojeISO;
           if(forcarPush || !jaNotificouHoje){
             if(count>0){
+              // Só notifica se tem conta dentro da antecedência (já filtrado em obterVencimentosProximos)
               const vencidas = vencimentos.filter(v=>v.tipo==="vencida").length;
               const hojeQtd = vencimentos.filter(v=>v.tipo==="hoje").length;
               const proximas = vencimentos.filter(v=>v.tipo==="proxima").length;
@@ -1238,38 +1242,35 @@ function testarNotificacaoAgoraOLD(){
               let corpo="";
               if(vencidas>0) corpo+= vencidas+" vencida"+(vencidas>1?"s":"")+"! ";
               if(hojeQtd>0) corpo+= hojeQtd+" vence hoje! ";
-              if(proximas>0) corpo+= proximas+" próxima"+(proximas>1?"s":"")+" em até "+configNotificacao.diasAntecedencia+" dia"+(configNotificacao.diasAntecedencia>1?"s":"")+".";
+              if(proximas>0) corpo+= proximas+" vence em "+vencimentos.filter(v=>v.tipo==="proxima")[0].diff+" dia(s)! ";
               const total = vencimentos.reduce((s,v)=>s+Number(v.item.valor||0),0);
-              corpo+= " Total: "+formatarMoeda(total);
-              // Usa envio direto para garantir que chega mesmo se SW falhar
+              corpo+= "Total: "+formatarMoeda(total);
               try{
                 const reg = await navigator.serviceWorker.ready;
                 await reg.showNotification(titulo, { body: corpo, icon: "./icon-192.png", badge: "./icon-96.png", tag: "vencimento-agendado", vibrate: [200,100,200] });
               }catch(e){
                 enviarNotificacaoBrowser(titulo, corpo);
               }
-              console.log("[Notificação] Enviada com", count, "vencimentos");
-            } else if(forcarPush){
-              // Mesmo sem contas, se foi agendamento forçado (timer chegou no horário ou botão Teste em 1 min), avisa que está funcionando
-              const titulo = "Controle Financeiro - Lembrete "+configNotificacao.horarioNotificacao;
-              const corpo = "⏰ Chegou no horário agendado! Tudo em dia, nenhuma conta a vencer nos próximos "+configNotificacao.diasAntecedencia+" dias.";
-              try{
-                const reg = await navigator.serviceWorker.ready;
-                await reg.showNotification(titulo, { body: corpo, icon: "./icon-192.png", badge: "./icon-96.png", tag: "lembrete-vazio", vibrate: [200,100,200] });
-              }catch(e){
-                enviarNotificacaoBrowser(titulo, corpo);
-              }
-              console.log("[Notificação] Enviada vazia (tudo em dia) no horário agendado");
-            }
-            if(count>0 || forcarPush){
+              console.log("[Notificação] Enviada com", count, "vencimentos (dentro da antecedência)");
               configNotificacao.ultimoAvisoData = hojeISO;
               salvarConfigNotificacao();
+            } else {
+              // Se for teste forçado, avisa mesmo sem contas
+              if(forcarPush){
+                const titulo = "Controle Financeiro - Teste";
+                const corpo = "✅ Teste OK! Nenhuma conta nos próximos "+configNotificacao.diasAntecedencia+" dias. Notificação só chega nos dias de antecedência.";
+                try{
+                  const reg = await navigator.serviceWorker.ready;
+                  await reg.showNotification(titulo, { body: corpo, icon: "./icon-192.png" });
+                }catch(e){ enviarNotificacaoBrowser(titulo, corpo); }
+                console.log("[Notificação] Teste enviado (sem contas, por isso normalmente não notificaria todos os dias)");
+              } else {
+                console.log("[Notificação] Nenhuma conta nos próximos "+configNotificacao.diasAntecedencia+" dias, não notifica (usuário não quer todo dia)");
+              }
             }
           } else {
-            console.log("[Notificação] Já notificou hoje, ignorando");
+            console.log("[Notificação] Já notificou hoje");
           }
-        } else {
-          console.log("[Notificação] Não enviada - pushAtivo:", configNotificacao.pushAtivo, "permissao:", (typeof Notification!=="undefined"?Notification.permission:"sem Notification"), "count:", count, "forcar:", forcarPush);
         }
 
         // Tenta agendar notificação que funciona mesmo com app fechado (Trigger API)
@@ -2124,6 +2125,26 @@ function testarNotificacaoAgoraOLD(){
     function menuSalvarBackup(){ fecharMenu(); salvarBackupFirebase(); }
     function menuBaixarBackup(){ fecharMenu(); baixarBackupFirebase(); }
     function menuAlterarSenha(){ fecharMenu(); trocarSenhaApp(); }
+    function menuConfigNotificacao(){ fecharMenu(); abrirPainelConfigNotificacao(); }
+    function menuConfigWhatsapp(){ fecharMenu(); abrirPainelConfigWhatsapp(); }
+    function abrirPainelConfigNotificacao(){
+      fecharPainelNotificacoes(); fecharPainelConfigWhatsapp();
+      document.getElementById("painelConfigNotificacao")?.classList.add("ativo");
+      carregarConfigNotificacao();
+    }
+    function fecharPainelConfigNotificacao(){ document.getElementById("painelConfigNotificacao")?.classList.remove("ativo"); }
+    function abrirPainelConfigWhatsapp(){
+      fecharPainelNotificacoes(); fecharPainelConfigNotificacao();
+      document.getElementById("painelConfigWhatsapp")?.classList.add("ativo");
+      carregarConfigNotificacao();
+    }
+    function fecharPainelConfigWhatsapp(){ document.getElementById("painelConfigWhatsapp")?.classList.remove("ativo"); }
+
+    // Fechar todos paineis ao clicar fora
+    const fecharTodosPaineis = ()=>{
+      fecharPainelNotificacoes(); fecharPainelConfigNotificacao(); fecharPainelConfigWhatsapp();
+    };
+
     function menuSair(){ 
       fecharMenu(); 
       if(usuarioAtual && usuarioAtual.modoLocal){
@@ -3197,7 +3218,7 @@ function testarNotificacaoAgoraOLD(){
             if(!temCheckbox){
               document.body.innerHTML = '<div style="padding:30px;text-align:center;font-family:sans-serif"><h2>🔄 Atualizando para v9...</h2><p>Detectamos app antigo.</p><p>Limpando cache...</p></div>';
               caches.keys().then(ks=>Promise.all(ks.map(k=>caches.delete(k)))).then(()=>{
-                localStorage.setItem("app_versao","v10.3.2");
+                localStorage.setItem("app_versao","v11.2");
                 setTimeout(()=>location.href="./controle-financeiro.html?updated=v9&ts="+Date.now(), 1500);
               });
             }
@@ -3248,5 +3269,5 @@ function testarNotificacaoAgoraOLD(){
       }
     })();
   </script>
-</body>
+<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a2b17b7058c3d87c',t:'MTc4NjcyNjQ3NA=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
