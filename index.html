@@ -335,7 +335,7 @@
     
 
 <script>
-// Força atualização do WebAPK no Android - v11.2
+// Força atualização do WebAPK no Android - v11.1.2
 (function(){
   if('serviceWorker' in navigator){
     navigator.serviceWorker.ready.then(function(reg){
@@ -347,10 +347,10 @@
     const badge = document.querySelector("#versaoApp") || document.querySelector("div[style*='v9']");
     if(isPWA){
       const currentVersion = localStorage.getItem("app_versao");
-      if(currentVersion && currentVersion !== "v11.2"){
-        console.log("[WebAPK] Versão antiga detectada:", currentVersion, "-> v11.2, limpando");
+      if(currentVersion && currentVersion !== "v11.1.2"){
+        console.log("[WebAPK] Versão antiga detectada:", currentVersion, "-> v11.1.2, limpando");
         setTimeout(function(){
-          if(confirm("🔄 Nova versão v11.2 disponível! Seu app está na "+currentVersion+". Atualizar agora?")){
+          if(confirm("🔄 Nova versão v11.1.2 disponível! Seu app está na "+currentVersion+". Atualizar agora?")){
             caches.keys().then(function(keys){ return Promise.all(keys.map(function(k){return caches.delete(k)})); }).then(function(){
               location.href = "./?v=9.4&forceUpdate="+Date.now();
             });
@@ -367,7 +367,7 @@
   <script>
     // FORÇA ATUALIZAÇÃO DO PWA SE VERSÃO ANTIGA SEM LEMBRAR
     (function(){
-      const VERSAO_ATUAL = "v11.2";
+      const VERSAO_ATUAL = "v11.1.2";
       const versaoSalva = localStorage.getItem("app_versao");
       const precisaAtualizar = versaoSalva !== VERSAO_ATUAL;
       const temLembrar = !!document.getElementById && true; // será checado após DOM
@@ -412,7 +412,7 @@
     })();
   </script>
   <div id="loginScreen" class="login-screen">
-    <div class="login-card"><div style="position:absolute;top:10px;right:12px;font-size:10px;color:#64748b;background:#f1f5f9;padding:2px 6px;border-radius:6px">v11.2</div>
+    <div class="login-card"><div style="position:absolute;top:10px;right:12px;font-size:10px;color:#64748b;background:#f1f5f9;padding:2px 6px;border-radius:6px">v11.1.2</div>
       <h2>💰 Controle Financeiro</h2>
       <p>Entre com usuário e senha</p>
       <input type="text" id="loginUsuario" placeholder="Usuário" autocomplete="username">
@@ -429,7 +429,7 @@
       <button id="btnNotificacoes" class="btn-notificacoes" onclick="togglePainelNotificacoes(event)" title="Notificações de vencimento" aria-label="Notificações">🔔<span id="badgeNotificacoes" class="badge-notif" style="display:none">0</span></button>
       <button class="mobile-add-toggle" onclick="toggleFormularioMobile(event)" title="Adicionar lançamento" aria-label="Adicionar lançamento">+</button>
       <button class="menu-toggle" onclick="toggleMenu(event)" title="Menu" aria-label="Abrir menu">☰</button>
-      <div id="menuHamburger" class="menu-dropdown">
+            <div id="menuHamburger" class="menu-dropdown">
         <button onclick="menuConfigNotificacao()">🔔 Config. Notificações</button>
         <button onclick="menuConfigWhatsapp()">📱 Config. WhatsApp</button>
         <div class="menu-separador"></div>
@@ -518,42 +518,56 @@
     </div>
   </div>
 
-  <div id="painelNotificacoes" class="painel-notificacoes">
+    <div id="painelNotificacoes" class="painel-notificacoes">
     <div class="notif-header">
       <span>🔔 Vencimentos</span>
       <div style="display:flex;gap:6px;align-items:center">
-        <button onclick="solicitarPermissaoNotificacao()" title="Ativar notificações do navegador" style="font-size:11px;padding:5px 9px;background:#3b82f6;color:white;border-radius:7px;font-weight:bold">🔔 Ativar</button>
+        <button onclick="solicitarPermissaoNotificacao()" style="font-size:11px;padding:5px 9px;background:#3b82f6;color:white;border-radius:7px;font-weight:bold">🔔 Ativar</button>
         <button onclick="fecharPainelNotificacoes()" style="background:transparent;border:none;font-size:18px;padding:2px 6px">✕</button>
       </div>
     </div>
     <div id="listaNotificacoes" class="notif-lista">
       <div style="padding:14px;text-align:center;color:#64748b;font-weight:bold">Nenhum vencimento próximo.</div>
     </div>
-    <div class="notif-config">
-      <label><input type="checkbox" id="toggleNotifPush" checked> Notificações do navegador (PC)</label>
-      <label>⏰ Horário diário: <input type="time" id="configHorarioNotif" value="08:00"> <small id="txtProximoHorario" style="color:#64748b"></small></label>
-      <label>Avisar com <input type="number" id="configDiasNotif" min="1" max="30" value="3"> dias de antecedência</label>
-      <div style="margin:10px 0;padding:10px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px">
-        <label style="color:#15803d"><input type="checkbox" id="toggleWhatsapp"> 📱 WhatsApp (mais confiável - funciona mesmo sem abrir o app se deixar aberto)</label>
-        <div style="margin-top:6px;display:flex;flex-direction:column;gap:4px">
-          <input type="text" id="configWhatsappTel" placeholder="Telefone com DDI ex: 5541999999999" style="height:32px">
-          <input type="text" id="configWhatsappKey" placeholder="Apikey do CallMeBot ex: 123456" style="height:32px">
-          <small style="color:#64748b">Telefone com DDI (ex: 5541...) + apikey do bot</small>
-          <button onclick="testarWhatsApp()" style="background:#25D366;color:white;padding:6px 10px;border-radius:7px;font-weight:bold;font-size:12px">📱 Testar WhatsApp</button>
-        </div>
+  </div>
+
+  <div id="painelConfigNotificacao" class="painel-notificacoes">
+    <div class="notif-header">
+      <span>🔔 Config. Notificações</span>
+      <button onclick="fecharPainelConfigNotificacao()" style="background:transparent;border:none;font-size:18px;padding:2px 6px">✕</button>
+    </div>
+    <div class="notif-config" style="flex:1;overflow-y:auto;padding:12px">
+      <label style="display:flex;align-items:center;gap:6px;margin-bottom:10px"><input type="checkbox" id="toggleNotifPush" checked> Notificações do navegador (PC)</label>
+      <label style="display:flex;flex-direction:column;gap:4px;margin-bottom:10px">⏰ Horário diário:<input type="time" id="configHorarioNotif" value="08:00" style="height:36px"></label>
+      <label style="display:flex;flex-direction:column;gap:4px;margin-bottom:10px">Avisar com <span style="display:flex;gap:6px;align-items:center"><input type="number" id="configDiasNotif" min="1" max="30" value="1" style="width:70px;height:32px"> dias de antecedência</span></label>
+      <small id="txtProximoHorario" style="display:block;color:#64748b;font-size:11px;margin-bottom:4px"></small>
+      <small id="txtAgendamentoFechado" style="display:block;color:#16a34a;font-weight:bold;font-size:11px;margin-bottom:12px"></small>
+      <div style="display:flex;gap:6px">
+        <button onclick="salvarConfigNotificacaoUI()" style="background:#16a34a;color:white;padding:10px 14px;border-radius:8px;font-weight:bold;flex:1">💾 Salvar</button>
+        <button onclick="testarNotificacaoAgora()" style="background:#0ea5e9;color:white;padding:10px 14px;border-radius:8px;font-weight:bold;flex:1">🔔 Testar</button>
       </div>
-      
-      <div style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap">
-        <button onclick="salvarConfigNotificacaoUI()" style="background:#16a34a;color:white;padding:6px 10px;border-radius:7px;font-weight:bold;font-size:12px">💾 Salvar config</button>
-        <button onclick="testarNotificacaoAgora()" style="background:#0ea5e9;color:white;padding:6px 10px;border-radius:7px;font-weight:bold;font-size:12px">🔔 Testar notificação</button>
-        <button onclick="verificarNotificacoes(true)" style="background:#64748b;color:white;padding:6px 10px;border-radius:7px;font-weight:bold;font-size:12px">🔄 Verificar agora</button>
-        <button onclick="filtrarStatusRapido('pendente');fecharPainelNotificacoes()" style="background:#f59e0b;color:white;padding:6px 10px;border-radius:7px;font-weight:bold;font-size:12px">👁️ Ver pendentes</button>
-      </div>
-      <small id="txtAgendamentoFechado" style="display:block;margin-top:8px;color:#16a34a;font-weight:bold;font-size:11px"></small>
+      <small style="display:block;margin-top:10px;color:#64748b">Notifica apenas nos dias que tiver conta vencida, hoje ou dentro dos dias configurados.</small>
     </div>
   </div>
 
-  <button id="btnInstalarPWA" class="btn-instalar-pwa" style="display:none!important" onclick="instalarPWA()"><span>📲</span> Instalar App no PC/Celular</button>
+  <div id="painelConfigWhatsapp" class="painel-notificacoes">
+    <div class="notif-header">
+      <span>📱 Config. WhatsApp</span>
+      <button onclick="fecharPainelConfigWhatsapp()" style="background:transparent;border:none;font-size:18px;padding:2px 6px">✕</button>
+    </div>
+    <div class="notif-config" style="flex:1;overflow-y:auto;padding:12px">
+      <label style="display:flex;align-items:center;gap:6px;margin-bottom:10px"><input type="checkbox" id="toggleWhatsapp"> Ativar WhatsApp</label>
+      <input type="text" id="configWhatsappTel" placeholder="Telefone com DDI ex: 5541999999999" style="height:40px;margin-bottom:8px">
+      <input type="text" id="configWhatsappKey" placeholder="Apikey CallMeBot" style="height:40px;margin-bottom:8px">
+      <div style="display:flex;gap:6px">
+        <button onclick="salvarConfigNotificacaoUI()" style="background:#16a34a;color:white;padding:10px 14px;border-radius:8px;font-weight:bold;flex:1">💾 Salvar</button>
+        <button onclick="testarWhatsApp()" style="background:#25D366;color:white;padding:10px 14px;border-radius:8px;font-weight:bold;flex:1">📱 Testar</button>
+      </div>
+      <small style="display:block;margin-top:8px;color:#64748b;line-height:1.3">Salve +34 644 71 81 99 e mande "I allow callmebot to send me messages" no WhatsApp</small>
+    </div>
+  </div>
+
+  <button id="btnInstalarPWA" class="btn-instalar-pwa" onclick="instalarPWA()" style="display:none!important"><span>📲</span> Instalar App no PC/Celular</button>
 
   <!-- Firebase SDK compatível com onclick global. Necessita internet ao abrir o HTML no navegador. -->
   <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
@@ -930,7 +944,7 @@
               body: corpo,
               icon: "./icon-192.png",
               badge: "./icon-96.png",
-              tag: "teste-agora-v11.2",
+              tag: "teste-agora-v11.1.2",
               vibrate: [200, 100, 200],
               requireInteraction: false,
               data: { url: "./" }
@@ -958,7 +972,7 @@
       };
 
       const executarTeste = async ()=>{
-        const titulo = "🔔 Teste v11.2" + (isAndroid ? " - Android" : " - PC");
+        const titulo = "🔔 Teste v11.1.2" + (isAndroid ? " - Android" : " - PC");
         const corpo = isAndroid ? "Se aparecer na barra superior, está funcionando! Deslize de cima para baixo para ver." : "Se você está vendo este pop-up no canto inferior direito, as notificações estão funcionando!";
         
         let ok = false;
@@ -1036,7 +1050,7 @@ function testarNotificacaoAgoraOLD(){
       } else {
         // granted - manda teste na hora
         const vencs = obterVencimentosProximos();
-        const ok = enviarTesteDireto("🔔 Teste - v11.2", vencs.length>0 ? "Funcionando! Você tem "+vencs.length+" conta(s) a vencer hoje" : "Se você está vendo este pop-up, as notificações estão funcionando! (teste sem contas)");
+        const ok = enviarTesteDireto("🔔 Teste - v11.1.2", vencs.length>0 ? "Funcionando! Você tem "+vencs.length+" conta(s) a vencer hoje" : "Se você está vendo este pop-up, as notificações estão funcionando! (teste sem contas)");
         if(ok){
           alert("✅ Teste enviado direto!\n\nSe não apareceu:\n- PC: Win+N para abrir central de notificações\n- Celular: deslize de cima para baixo\n- Verifique se Chrome tem permissão nas configurações do Android");
         } else {
@@ -2125,8 +2139,8 @@ function testarNotificacaoAgoraOLD(){
     function menuSalvarBackup(){ fecharMenu(); salvarBackupFirebase(); }
     function menuBaixarBackup(){ fecharMenu(); baixarBackupFirebase(); }
     function menuAlterarSenha(){ fecharMenu(); trocarSenhaApp(); }
-    function menuConfigNotificacao(){ fecharMenu(); abrirPainelConfigNotificacao(); }
-    function menuConfigWhatsapp(){ fecharMenu(); abrirPainelConfigWhatsapp(); }
+    function menuConfigNotificacao(){ fecharMenu(); document.getElementById("painelConfigNotificacao")?.classList.add("ativo"); carregarConfigNotificacao(); }
+    function menuConfigWhatsapp(){ fecharMenu(); document.getElementById("painelConfigWhatsapp")?.classList.add("ativo"); carregarConfigNotificacao(); }
     function abrirPainelConfigNotificacao(){
       fecharPainelNotificacoes(); fecharPainelConfigWhatsapp();
       document.getElementById("painelConfigNotificacao")?.classList.add("ativo");
@@ -3218,7 +3232,7 @@ function testarNotificacaoAgoraOLD(){
             if(!temCheckbox){
               document.body.innerHTML = '<div style="padding:30px;text-align:center;font-family:sans-serif"><h2>🔄 Atualizando para v9...</h2><p>Detectamos app antigo.</p><p>Limpando cache...</p></div>';
               caches.keys().then(ks=>Promise.all(ks.map(k=>caches.delete(k)))).then(()=>{
-                localStorage.setItem("app_versao","v11.2");
+                localStorage.setItem("app_versao","v11.1.2");
                 setTimeout(()=>location.href="./controle-financeiro.html?updated=v9&ts="+Date.now(), 1500);
               });
             }
@@ -3269,5 +3283,5 @@ function testarNotificacaoAgoraOLD(){
       }
     })();
   </script>
-<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a2b17b7058c3d87c',t:'MTc4NjcyNjQ3NA=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a2b196421d190322',t:'MTc4NjcyNzU3Mg=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
