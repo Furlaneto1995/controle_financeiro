@@ -1,4 +1,4 @@
-/* Controle Financeiro PWA v10.3 - FIX clone error */
+/* Controle Financeiro PWA v11.1 - FIX clone error */
 const CACHE_NAME = "financeiro-pwa-v98";
 const ICONS = ["./manifest.json","./icon-96.png","./icon-192.png","./icon-512.png"];
 
