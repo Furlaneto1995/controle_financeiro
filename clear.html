@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="pt-BR"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Limpando App - v9</title>
+<style>body{font-family:sans-serif;padding:30px;text-align:center;background:#f1f5f9}button{padding:12px 20px;background:#dc2626;color:white;border:none;border-radius:10px;font-weight:bold}</style>
+</head><body>
+<h2>🧹 Limpeza Total do PWA - v9</h2>
+<p>Se seu app instalado abre versão antiga sem "Lembrar de mim", clique abaixo:</p>
+<button onclick="limparTudo()">LIMPAR TUDO E ATUALIZAR</button>
+<p id="log" style="margin-top:20px;color:#64748b;text-align:left;background:white;padding:12px;border-radius:10px;white-space:pre-wrap"></p>
+<script>
+function log(t){ document.getElementById('log').innerText += t + "\n"; console.log(t); }
+async function limparTudo(){
+  log("Iniciando limpeza total...");
+  try{
+    if('serviceWorker' in navigator){
+      const regs = await navigator.serviceWorker.getRegistrations();
+      log("SW encontrados: "+regs.length);
+      for(const r of regs){ await r.unregister(); log("SW desregistrado: "+r.scope); }
+    }
+    if('caches' in window){
+      const keys = await caches.keys();
+      log("Caches: "+keys.join(", "));
+      await Promise.all(keys.map(k=>caches.delete(k)));
+      log("Todos caches apagados");
+    }
+    localStorage.clear();
+    log("localStorage limpo");
+    try{
+      const dbReq = indexedDB.databases ? await indexedDB.databases() : [];
+      for(const db of dbReq){ indexedDB.deleteDatabase(db.name); log("IDB apagado: "+db.name); }
+    }catch(e){ log("IDB erro: "+e.message); }
+    log("✅ Limpeza completa! Redirecionando para versão nova em 2s...");
+    setTimeout(()=>{ location.href="./controle-financeiro.html?v=9-final&force="+Date.now(); }, 2000);
+  }catch(e){ log("ERRO: "+e.message); }
+}
+// Auto-limpa se vier com ?autoClear
+if(location.search.includes("autoClear")){
+  setTimeout(limparTudo, 500);
+}
+</script>
+</body></html>
