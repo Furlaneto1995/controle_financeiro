@@ -1,8 +1,8 @@
 {
   "name": "Controle Financeiro",
   "short_name": "Financeiro",
-  "description": "Controle financeiro com sync automático",
-  "start_url": "./?v=12",
+  "description": "Controle financeiro com notificações WhatsApp",
+  "start_url": "./",
   "display": "standalone",
   "background_color": "#2b4668",
   "theme_color": "#2b4668",
@@ -10,11 +10,6 @@
   "scope": "./",
   "lang": "pt-BR",
   "id": "/controle_financeiro/",
-  "launch_handler": {
-    "client_mode": [
-      "navigate-existing"
-    ]
-  },
   "icons": [
     {
       "src": "./icon-96.png",
@@ -37,6 +32,5 @@
       "type": "image/png",
       "purpose": "maskable"
     }
-  ],
-  "version": "12.0"
+  ]
 }
