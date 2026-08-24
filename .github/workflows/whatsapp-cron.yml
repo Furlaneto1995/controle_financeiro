@@ -2,7 +2,7 @@ name: WhatsApp Vencimentos
 
 on:
   schedule:
-    - cron: '*/15 * * * *'  # Verifica a cada 15 min
+    - cron: '*/1 * * * *'  # Verifica a cada 1 min
   workflow_dispatch:
     inputs:
       force:
