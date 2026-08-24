@@ -1,14 +1,14 @@
-name: WhatsApp Vencimentos
+name: WhatsApp Vencimentos - v12 Final
 
 on:
   schedule:
-    - cron: '*/1 * * * *'  # Verifica a cada 1 min
+    - cron: '*/1 * * * *'
   workflow_dispatch:
     inputs:
       force:
-        description: 'Forçar envio agora (ignora horário) - para teste'
+        description: 'Forçar envio agora (para teste)'
         required: false
-        default: 'false'
+        default: 'true'
         type: boolean
 
 jobs:
@@ -20,7 +20,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 20
-      - name: Enviar WhatsApp se tiver vencimentos
+      - name: Enviar WhatsApp
         timeout-minutes: 4
         env:
           FIREBASE_DATABASE_URL: "https://controle-financeiro-e4f3b-default-rtdb.firebaseio.com"
@@ -28,6 +28,7 @@ jobs:
           FORCE_SEND: ${{ inputs.force }}
           EVENT_NAME: ${{ github.event_name }}
         run: |
+          echo "Evento: $EVENT_NAME Force: $FORCE_SEND"
           npm install firebase-admin@12 node-fetch@2 --no-audit --no-fund --loglevel=error
           node << 'NODE'
           const admin = require('firebase-admin');
@@ -44,39 +45,47 @@ jobs:
           }
           async function enviarWhatsApp(tel, apikey, msg){
             const url=`https://api.callmebot.com/whatsapp.php?phone=${encodeURIComponent(tel)}&text=${encodeURIComponent(msg)}&apikey=${encodeURIComponent(apikey)}`;
+            console.log(`Enviando WhatsApp para ${tel}`);
             try{
               const r=await fetch(url);
               const t=await r.text();
-              console.log("CallMeBot:", t.slice(0,200));
+              console.log("Resposta:", t.slice(0,400));
               return r.ok;
             }catch(e){ console.error(e.message); return false; }
           }
           (async()=>{
             const snap=await db.ref("usuarios").once("value");
-            if(!snap.exists()){ console.log("Sem usuários"); return; }
+            if(!snap.exists()){ console.log("Sem usuarios"); process.exit(0); }
+            const usuarios=snap.val();
+            console.log(`Total usuarios: ${Object.keys(usuarios).length}`);
             const agora=new Date();
             const sp=new Date(agora.getTime()-3*60*60*1000);
             const hojeISO=agora.toISOString().slice(0,10);
             const spMin=sp.getHours()*60+sp.getMinutes();
+            const spStr=String(sp.getHours()).padStart(2,"0")+":"+String(sp.getMinutes()).padStart(2,"0");
             const isManual=process.env.EVENT_NAME==="workflow_dispatch";
             const force=process.env.FORCE_SEND==="true" || isManual;
-            console.log(`Hora SP: ${String(sp.getHours()).padStart(2,"0")}:${String(sp.getMinutes()).padStart(2,"0")} - Force: ${force}`);
+            console.log(`Hora SP: ${spStr} Hoje: ${hojeISO} Manual: ${isManual} Force: ${force}`);
             
-            for(const uid of Object.keys(snap.val())){
-              const user=snap.val()[uid];
+            let enviados=0;
+            for(const uid of Object.keys(usuarios)){
+              const user=usuarios[uid];
               const cfg=user.configNotificacao;
               const resumo=user.dadosResumo;
-              if(!cfg||!resumo) continue;
-              if(!cfg.whatsappAtivo||!cfg.whatsappTelefone||!cfg.whatsappApikey) continue;
+              if(!cfg){ console.log(`${uid}: sem config`); continue; }
+              if(!resumo){ console.log(`${uid}: sem resumo - abra app v12 e faca login`); continue; }
+              if(!cfg.whatsappAtivo||!cfg.whatsappTelefone||!cfg.whatsappApikey){ console.log(`${uid}: WhatsApp nao configurado`); continue; }
               
-              const [hC,mC]= (cfg.horario||"08:00").split(":").map(Number);
+              const [hC,mC]=(cfg.horario||"08:00").split(":").map(Number);
               const diffMin=Math.abs(spMin - (hC*60+mC));
-              if(!force && diffMin>14) continue; // só no horário configurado, exceto quando forçar manual
+              console.log(`${uid}: horario ${cfg.horario} dias ${cfg.diasAntecedencia} diffMin ${diffMin} tel ${cfg.whatsappTelefone.slice(0,4)}**** pendentes ${resumo.pendentes?.length||0}`);
+              
+              if(!force && diffMin>14){ console.log(`  Fora janela ${cfg.horario}`); continue; }
               
               const chave=`wpp_${hojeISO}_${cfg.horario}`;
               if(!force){
                 const ja=await db.ref(`usuarios/${uid}/historicoPush/${chave}`).once("value");
-                if(ja.exists()) continue;
+                if(ja.exists()){ console.log(`  Ja enviado hoje`); continue; }
               }
               
               const vencs=(resumo.pendentes||[]).map(it=>{
@@ -85,17 +94,21 @@ jobs:
                 return {...it,diff,tipo};
               }).filter(x=>x.tipo!=="");
               
+              console.log(`  Vencimentos dentro antecedencia: ${vencs.length}`);
               if(vencs.length===0) continue;
               
               let msg=`💰 Controle Financeiro - ${sp.toLocaleString("pt-BR")}\n\n`;
-              vencs.forEach(v=>{ msg+=`• ${v.descricao} - R$${v.valor} - ${v.data} (${v.tipo})\n`; });
-              msg+=`\nTotal: R$${vencs.reduce((s,v)=>s+Number(v.valor||0),0)}`;
+              vencs.forEach(v=>{ msg+=`• ${v.descricao} - R$${v.valor} - ${v.data} (${v.tipo} ${v.diff}d)\n`; });
+              msg+=`\nTotal: R$${vencs.reduce((s,v)=>s+Number(v.valor||0),0)}\nhttps://furlaneto1995.github.io/controle_financeiro/`;
               
               const ok=await enviarWhatsApp(cfg.whatsappTelefone, cfg.whatsappApikey, msg);
-              console.log(`${uid}: ${ok?"✅ Enviado":"❌ Falha"}`);
-              if(ok) await db.ref(`usuarios/${uid}/historicoPush/${chave}`).set({enviadoEm:new Date().toISOString()});
+              console.log(`${uid}: ${ok?"✅ ENVIADO":"❌ FALHA"}`);
+              if(ok && !force){
+                await db.ref(`usuarios/${uid}/historicoPush/${chave}`).set({enviadoEm:new Date().toISOString()});
+              }
+              if(ok) enviados++;
             }
-            console.log("Fim");
+            console.log(`Fim: enviados=${enviados}`);
             process.exit(0);
           })();
           NODE
