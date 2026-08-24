@@ -1,15 +1,14 @@
-# Alternativa SEM precisar de Firebase Functions - roda direto no GitHub a cada 15 min
-# Envia WhatsApp mesmo com app fechado, sem precisar instalar Node no PC da empresa
 name: WhatsApp Vencimentos - Cron GitHub
 
 on:
   schedule:
-    - cron: '*/15 * * * *'  # a cada 15 min
-  workflow_dispatch:  # permite rodar manual clicando em Run workflow
+    - cron: '*/15 * * * *'
+  workflow_dispatch:
 
 jobs:
   verificar-e-enviar:
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     steps:
       - uses: actions/checkout@v4
       
@@ -19,103 +18,89 @@ jobs:
           node-version: 20
           
       - name: Verificar vencimentos e enviar WhatsApp
+        timeout-minutes: 4
         env:
           FIREBASE_DATABASE_URL: "https://controle-financeiro-e4f3b-default-rtdb.firebaseio.com"
           FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
         run: |
-          npm install firebase-admin node-fetch@2
-          node - << 'NODE'
+          echo "🔍 Verificando secrets..."
+          if [ -z "$FIREBASE_SERVICE_ACCOUNT" ]; then
+            echo "❌ ERRO: Secret FIREBASE_SERVICE_ACCOUNT não configurado!"
+            exit 1
+          fi
+          echo "✅ Secret encontrado"
+          echo "📦 Instalando dependências..."
+          npm install firebase-admin@12 node-fetch@2 --no-audit --no-fund
+          echo "✅ Instalado"
+          echo "🚀 Iniciando verificação..."
+          node << 'NODE'
           const admin = require('firebase-admin');
           const fetch = require('node-fetch');
-          
-          // Inicializa com service account do secret
-          const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
-          admin.initializeApp({
-            credential: admin.credential.cert(serviceAccount),
-            databaseURL: process.env.FIREBASE_DATABASE_URL
-          });
-          
+          let sa;
+          try{
+            sa = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
+            console.log("✅ Service Account projeto:", sa.project_id);
+          }catch(e){ console.error("❌ JSON inválido", e.message); process.exit(1); }
+          admin.initializeApp({ credential: admin.credential.cert(sa), databaseURL: process.env.FIREBASE_DATABASE_URL });
           const db = admin.database();
-          
-          function diffDias(dataISO){
-            if(!dataISO || !dataISO.includes("-")) return 9999;
-            const partes = dataISO.split("-").map(Number);
-            const data = new Date(partes[0], partes[1]-1, partes[2]);
-            data.setHours(0,0,0,0);
-            const hoje = new Date(); hoje.setHours(0,0,0,0);
-            return Math.floor((data - hoje)/86400000);
+          function diffDias(d){
+            if(!d||!d.includes("-")) return 9999;
+            const p=d.split("-").map(Number);
+            const dt=new Date(p[0],p[1]-1,p[2]); dt.setHours(0,0,0,0);
+            const hoje=new Date(); hoje.setHours(0,0,0,0);
+            return Math.floor((dt-hoje)/86400000);
           }
-          
           async function enviarWhatsApp(tel, apikey, msg){
-            const url = `https://api.callmebot.com/whatsapp.php?phone=${encodeURIComponent(tel)}&text=${encodeURIComponent(msg)}&apikey=${encodeURIComponent(apikey)}`;
+            const url=`https://api.callmebot.com/whatsapp.php?phone=${encodeURIComponent(tel)}&text=${encodeURIComponent(msg)}&apikey=${encodeURIComponent(apikey)}`;
+            console.log(`📱 Enviando para ${tel}...`);
             try{
-              const r = await fetch(url);
-              const t = await r.text();
-              console.log("WhatsApp resposta:", t.slice(0,200));
-              return t.toLowerCase().includes("message") || r.ok;
-            }catch(e){ console.error(e); return false; }
+              const controller=new AbortController();
+              const to=setTimeout(()=>controller.abort(),15000);
+              const r=await fetch(url,{signal:controller.signal});
+              clearTimeout(to);
+              const t=await r.text();
+              console.log("Resposta:", t.slice(0,300));
+              return r.ok;
+            }catch(e){ console.error("Erro:", e.message); return false; }
           }
-          
           (async()=>{
-            const snap = await db.ref("usuarios").once("value");
+            const snap=await db.ref("usuarios").once("value");
             if(!snap.exists()){ console.log("Sem usuários"); return; }
-            const agora = new Date();
-            const horaAtual = String(agora.getHours()).padStart(2,"0")+":"+String(agora.getMinutes()).padStart(2,"0");
-            const hojeISO = agora.toISOString().slice(0,10);
-            console.log("Hora UTC agora:", horaAtual, "Data:", hojeISO);
-            
-            // Considera America/Sao_Paulo UTC-3
-            const spHora = new Date(agora.getTime() - 3*60*60*1000);
-            const spHoraStr = String(spHora.getHours()).padStart(2,"0")+":"+String(spHora.getMinutes()).padStart(2,"0");
-            console.log("Hora SP:", spHoraStr);
-            
+            console.log(`Total usuários: ${Object.keys(snap.val()).length}`);
+            const agora=new Date();
+            const sp=new Date(agora.getTime()-3*60*60*1000);
+            const hojeISO=agora.toISOString().slice(0,10);
+            const spStr=String(sp.getHours()).padStart(2,"0")+":"+String(sp.getMinutes()).padStart(2,"0");
+            console.log(`Hora SP: ${spStr}`);
+            let enviados=0;
             for(const uid of Object.keys(snap.val())){
-              const user = snap.val()[uid];
-              const config = user.configNotificacao;
-              const resumo = user.dadosResumo;
-              if(!config || !resumo) continue;
-              
-              const horario = config.horario || "08:00";
-              const dias = Number(config.diasAntecedencia)||1;
-              const wppAtivo = !!config.whatsappAtivo;
-              const tel = config.whatsappTelefone;
-              const apikey = config.whatsappApikey;
-              
-              if(!wppAtivo || !tel || !apikey) continue;
-              
-              // Verifica se está no horário (tolerância 15min)
-              const [hC,mC] = horario.split(":").map(Number);
-              const diffMin = Math.abs((spHora.getHours()*60+spHora.getMinutes()) - (hC*60+mC));
-              if(diffMin>14) continue;
-              
-              const chave = `wpp_github_${hojeISO}_${horario}`;
-              const ja = await db.ref(`usuarios/${uid}/historicoPush/${chave}`).once("value");
-              if(ja.exists()){ console.log(uid+" já enviado hoje"); continue; }
-              
-              const pendentes = resumo.pendentes||[];
-              const vencs = pendentes.map(it=>{
-                const diff = diffDias(it.data);
-                let tipo=""; if(diff<0) tipo="vencida"; else if(diff===0) tipo="hoje"; else if(diff>0 && diff<=dias) tipo="proxima";
-                return {...it, diff, tipo};
+              const user=snap.val()[uid];
+              const config=user.configNotificacao;
+              const resumo=user.dadosResumo;
+              if(!config||!resumo){ console.log(`${uid}: sem config ou resumo`); continue; }
+              const horario=config.horario||"08:00";
+              const dias=Number(config.diasAntecedencia)||1;
+              const tel=config.whatsappTelefone;
+              const apikey=config.whatsappApikey;
+              if(!config.whatsappAtivo||!tel||!apikey){ console.log(`${uid}: wpp não configurado`); continue; }
+              const [hC,mC]=horario.split(":").map(Number);
+              if(Math.abs((sp.getHours()*60+sp.getMinutes())-(hC*60+mC))>14){ console.log(`${uid}: fora janela ${horario}`); continue; }
+              const chave=`wpp_github_${hojeISO}_${horario}`;
+              const ja=await db.ref(`usuarios/${uid}/historicoPush/${chave}`).once("value");
+              if(ja.exists()){ console.log(`${uid}: já enviado hoje`); continue; }
+              const vencs=(resumo.pendentes||[]).map(it=>{
+                const diff=diffDias(it.data);
+                let tipo=""; if(diff<0) tipo="vencida"; else if(diff===0) tipo="hoje"; else if(diff>0&&diff<=dias) tipo="proxima";
+                return {...it,diff,tipo};
               }).filter(x=>x.tipo!=="");
-              
-              if(vencs.length===0){ console.log(uid+" sem vencimentos"); continue; }
-              
-              let msg = `💰 *Controle Financeiro* - ${spHora.toLocaleString("pt-BR")}\n\n`;
-              const vencidas = vencs.filter(v=>v.tipo==="vencida");
-              const hoje = vencs.filter(v=>v.tipo==="hoje");
-              const prox = vencs.filter(v=>v.tipo==="proxima");
-              if(vencidas.length) msg += `🚨 VENCIDAS (${vencidas.length}):\n`+vencidas.map(v=>`• ${v.descricao} - R$${v.valor}`).join("\n")+"\n\n";
-              if(hoje.length) msg += `⚠️ HOJE (${hoje.length}):\n`+hoje.map(v=>`• ${v.descricao} - R$${v.valor}`).join("\n")+"\n\n";
-              if(prox.length) msg += `⏰ Em até ${dias}d (${prox.length}):\n`+prox.map(v=>`• ${v.descricao} - ${v.data}`).join("\n")+"\n\n";
-              msg += `Total: R$${vencs.reduce((s,v)=>s+Number(v.valor||0),0)}\nhttps://furlaneto1995.github.io/controle_financeiro/`;
-              
-              const ok = await enviarWhatsApp(tel, apikey, msg);
-              console.log(`WhatsApp ${uid}: ${ok ? "OK" : "FALHA"}`);
-              if(ok){
-                await db.ref(`usuarios/${uid}/historicoPush/${chave}`).set({enviadoEm: new Date().toISOString(), via:"github-actions"});
-              }
+              console.log(`${uid}: ${vencs.length} vencimentos`);
+              if(vencs.length===0) continue;
+              let msg=`💰 Controle Financeiro - ${sp.toLocaleString("pt-BR")}\n\n`+vencs.map(v=>`• ${v.descricao} - R$${v.valor} - ${v.data} (${v.tipo})`).join("\n");
+              const ok=await enviarWhatsApp(tel,apikey,msg);
+              console.log(`${uid}: ${ok?"✅ OK":"❌ FALHA"}`);
+              if(ok){ await db.ref(`usuarios/${uid}/historicoPush/${chave}`).set({enviadoEm:new Date().toISOString()}); enviados++; }
             }
-            console.log("Fim verificação");
+            console.log(`Fim: enviados=${enviados}`);
           })();
           NODE
+          echo "✅ Finalizado"
