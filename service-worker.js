@@ -1,5 +1,5 @@
 /* Controle Financeiro PWA v12.4 - Web Push com Firebase Cloud Messaging */
-const CACHE_NAME = "financeiro-pwa-v12.4-push";
+const CACHE_NAME = "financeiro-v12-final";
 const ICONS = ["./manifest.json","./icon-96.png","./icon-192.png","./icon-512.png"];
 
 importScripts("https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js");
