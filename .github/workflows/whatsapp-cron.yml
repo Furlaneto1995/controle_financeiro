@@ -1,16 +1,15 @@
-name: WhatsApp Vencimentos - Cron GitHub
+name: WhatsApp Vencimentos
 
 on:
   schedule:
-    - cron: '*/15 * * * *'
+    - cron: '*/1 * * * *'  # Verifica a cada 1 min
   workflow_dispatch:
     inputs:
       force:
-        description: 'Forçar envio mesmo fora do horário (para teste)'
+        description: 'Forçar envio agora (ignora horário) - para teste'
         required: false
-        default: 'true'
-        type: choice
-        options: ['true','false']
+        default: 'false'
+        type: boolean
 
 jobs:
   verificar-e-enviar:
@@ -18,28 +17,18 @@ jobs:
     timeout-minutes: 5
     steps:
       - uses: actions/checkout@v4
-      
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
+      - uses: actions/setup-node@v4
         with:
           node-version: 20
-          
-      - name: Verificar vencimentos e enviar WhatsApp
+      - name: Enviar WhatsApp se tiver vencimentos
         timeout-minutes: 4
         env:
           FIREBASE_DATABASE_URL: "https://controle-financeiro-e4f3b-default-rtdb.firebaseio.com"
           FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
-          FORCE_SEND: ${{ inputs.force || 'false' }}
-          GITHUB_EVENT_NAME: ${{ github.event_name }}
+          FORCE_SEND: ${{ inputs.force }}
+          EVENT_NAME: ${{ github.event_name }}
         run: |
-          echo "🔍 Evento: $GITHUB_EVENT_NAME, Force: $FORCE_SEND"
-          if [ -z "$FIREBASE_SERVICE_ACCOUNT" ]; then
-            echo "❌ Secret FIREBASE_SERVICE_ACCOUNT não configurado!"
-            exit 1
-          fi
-          echo "📦 Instalando..."
           npm install firebase-admin@12 node-fetch@2 --no-audit --no-fund --loglevel=error
-          echo "🚀 Iniciando..."
           node << 'NODE'
           const admin = require('firebase-admin');
           const fetch = require('node-fetch');
@@ -55,73 +44,58 @@ jobs:
           }
           async function enviarWhatsApp(tel, apikey, msg){
             const url=`https://api.callmebot.com/whatsapp.php?phone=${encodeURIComponent(tel)}&text=${encodeURIComponent(msg)}&apikey=${encodeURIComponent(apikey)}`;
-            console.log(`📱 Enviando para ${tel} - ${msg.slice(0,80)}...`);
             try{
-              const r=await fetch(url, { timeout: 15000 });
+              const r=await fetch(url);
               const t=await r.text();
-              console.log("Resposta CallMeBot:", t.slice(0,500));
-              return t.toLowerCase().includes("message") || r.ok;
-            }catch(e){ console.error("Erro:", e.message); return false; }
+              console.log("CallMeBot:", t.slice(0,200));
+              return r.ok;
+            }catch(e){ console.error(e.message); return false; }
           }
           (async()=>{
             const snap=await db.ref("usuarios").once("value");
             if(!snap.exists()){ console.log("Sem usuários"); return; }
-            const usuarios=snap.val();
-            console.log(`👥 Total usuários: ${Object.keys(usuarios).length}`);
             const agora=new Date();
             const sp=new Date(agora.getTime()-3*60*60*1000);
             const hojeISO=agora.toISOString().slice(0,10);
-            const spStr=String(sp.getHours()).padStart(2,"0")+":"+String(sp.getMinutes()).padStart(2,"0");
-            const isManual = process.env.GITHUB_EVENT_NAME === "workflow_dispatch";
-            const force = process.env.FORCE_SEND === "true" || isManual;
-            console.log(`⏰ Hora SP: ${spStr}, Hoje: ${hojeISO}, Manual: ${isManual}, Force: ${force}`);
+            const spMin=sp.getHours()*60+sp.getMinutes();
+            const isManual=process.env.EVENT_NAME==="workflow_dispatch";
+            const force=process.env.FORCE_SEND==="true" || isManual;
+            console.log(`Hora SP: ${String(sp.getHours()).padStart(2,"0")}:${String(sp.getMinutes()).padStart(2,"0")} - Force: ${force}`);
             
-            for(const uid of Object.keys(usuarios)){
-              const user=usuarios[uid];
-              const config=user.configNotificacao;
+            for(const uid of Object.keys(snap.val())){
+              const user=snap.val()[uid];
+              const cfg=user.configNotificacao;
               const resumo=user.dadosResumo;
-              if(!config){ console.log(`⏭️ ${uid}: sem config`); continue; }
-              if(!resumo){ console.log(`⏭️ ${uid}: sem dadosResumo - abra o app v11.2+ e faça login`); continue; }
-              const horario=config.horario||"08:00";
-              const dias=Number(config.diasAntecedencia)||1;
-              const tel=config.whatsappTelefone;
-              const apikey=config.whatsappApikey;
-              if(!config.whatsappAtivo||!tel||!apikey){ console.log(`⏭️ ${uid}: WhatsApp não configurado`); continue; }
+              if(!cfg||!resumo) continue;
+              if(!cfg.whatsappAtivo||!cfg.whatsappTelefone||!cfg.whatsappApikey) continue;
               
-              const [hC,mC]=horario.split(":").map(Number);
-              const diffMin=Math.abs((sp.getHours()*60+sp.getMinutes())-(hC*60+mC));
-              console.log(`🔍 ${uid}: config ${horario}, dias ${dias}, diffMin ${diffMin}, tel ${tel.slice(0,4)}****`);
+              const [hC,mC]= (cfg.horario||"08:00").split(":").map(Number);
+              const diffMin=Math.abs(spMin - (hC*60+mC));
+              if(!force && diffMin>14) continue; // só no horário configurado, exceto quando forçar manual
               
-              if(!force && diffMin>14){
-                console.log(`  ⏭️ Fora da janela de 15min do horário ${horario}, pulando (mas como é teste manual, forçando)`);
-                if(!isManual) continue;
-              }
-              
-              const chave=`wpp_github_${hojeISO}_${horario}`;
+              const chave=`wpp_${hojeISO}_${cfg.horario}`;
               if(!force){
                 const ja=await db.ref(`usuarios/${uid}/historicoPush/${chave}`).once("value");
-                if(ja.exists()){ console.log(`  ⏭️ Já enviado hoje ${horario}`); continue; }
+                if(ja.exists()) continue;
               }
               
               const vencs=(resumo.pendentes||[]).map(it=>{
                 const diff=diffDias(it.data);
-                let tipo=""; if(diff<0) tipo="vencida"; else if(diff===0) tipo="hoje"; else if(diff>0&&diff<=dias) tipo="proxima";
+                let tipo=""; if(diff<0) tipo="vencida"; else if(diff===0) tipo="hoje"; else if(diff>0&&diff<=Number(cfg.diasAntecedencia||1)) tipo="proxima";
                 return {...it,diff,tipo};
               }).filter(x=>x.tipo!=="");
               
-              console.log(`  Vencimentos nos próximos ${dias}d: ${vencs.length}`);
-              if(vencs.length===0){ console.log("  Nenhum para enviar"); continue; }
+              if(vencs.length===0) continue;
               
               let msg=`💰 Controle Financeiro - ${sp.toLocaleString("pt-BR")}\n\n`;
-              vencs.forEach(v=>{ msg+=`• ${v.descricao} - R$${v.valor} - ${v.data} (${v.tipo} ${v.diff}d)\n`; });
-              msg+=`\nTotal: R$${vencs.reduce((s,v)=>s+Number(v.valor||0),0)}\nhttps://furlaneto1995.github.io/controle_financeiro/`;
+              vencs.forEach(v=>{ msg+=`• ${v.descricao} - R$${v.valor} - ${v.data} (${v.tipo})\n`; });
+              msg+=`\nTotal: R$${vencs.reduce((s,v)=>s+Number(v.valor||0),0)}`;
               
-              const ok=await enviarWhatsApp(tel,apikey,msg);
-              console.log(`${uid}: ${ok?"✅ ENVIADO":"❌ FALHA"}`);
-              if(ok && !force){
-                await db.ref(`usuarios/${uid}/historicoPush/${chave}`).set({enviadoEm:new Date().toISOString(), via:"github-actions"});
-              }
+              const ok=await enviarWhatsApp(cfg.whatsappTelefone, cfg.whatsappApikey, msg);
+              console.log(`${uid}: ${ok?"✅ Enviado":"❌ Falha"}`);
+              if(ok) await db.ref(`usuarios/${uid}/historicoPush/${chave}`).set({enviadoEm:new Date().toISOString()});
             }
-            console.log("✅ Fim");
+            console.log("Fim");
+            process.exit(0);
           })();
           NODE
