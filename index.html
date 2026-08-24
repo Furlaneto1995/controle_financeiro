@@ -335,7 +335,7 @@
     
 
 <script>
-// Força atualização do WebAPK no Android - v11.5
+// Força atualização do WebAPK no Android - v12
 (function(){
   if('serviceWorker' in navigator){
     navigator.serviceWorker.ready.then(function(reg){
@@ -347,10 +347,10 @@
     const badge = document.querySelector("#versaoApp") || document.querySelector("div[style*='v9']");
     if(isPWA){
       const currentVersion = localStorage.getItem("app_versao");
-      if(currentVersion && currentVersion !== "v11.5"){
-        console.log("[WebAPK] Versão antiga detectada:", currentVersion, "-> v11.5, limpando");
+      if(currentVersion && currentVersion !== "v12"){
+        console.log("[WebAPK] Versão antiga detectada:", currentVersion, "-> v12, limpando");
         setTimeout(function(){
-          if(confirm("🔄 Nova versão v11.5 disponível! Seu app está na "+currentVersion+". Atualizar agora?")){
+          if(confirm("🔄 Nova versão v12 disponível! Seu app está na "+currentVersion+". Atualizar agora?")){
             caches.keys().then(function(keys){ return Promise.all(keys.map(function(k){return caches.delete(k)})); }).then(function(){
               location.href = "./?v=9.4&forceUpdate="+Date.now();
             });
@@ -367,7 +367,7 @@
   <script>
     // FORÇA ATUALIZAÇÃO DO PWA SE VERSÃO ANTIGA SEM LEMBRAR
     (function(){
-      const VERSAO_ATUAL = "v11.5";
+      const VERSAO_ATUAL = "v12";
       const versaoSalva = localStorage.getItem("app_versao");
       const precisaAtualizar = versaoSalva !== VERSAO_ATUAL;
       const temLembrar = !!document.getElementById && true; // será checado após DOM
@@ -412,7 +412,7 @@
     })();
   </script>
   <div id="loginScreen" class="login-screen">
-    <div class="login-card"><div style="position:absolute;top:10px;right:12px;font-size:10px;color:#64748b;background:#f1f5f9;padding:2px 6px;border-radius:6px">v11.5</div><div style="position:absolute;top:10px;right:12px;font-size:10px;color:#64748b;background:#f1f5f9;padding:2px 6px;border-radius:6px">v11.5</div>
+    <div class="login-card"><div style="position:absolute;top:10px;right:12px;font-size:10px;color:#64748b;background:#f1f5f9;padding:2px 6px;border-radius:6px">v12</div><div style="position:absolute;top:10px;right:12px;font-size:10px;color:#64748b;background:#f1f5f9;padding:2px 6px;border-radius:6px">v12</div>
       <h2>💰 Controle Financeiro</h2>
       <p>Entre com usuário e senha</p>
       <input type="text" id="loginUsuario" placeholder="Usuário" autocomplete="username">
@@ -565,7 +565,7 @@
         <button onclick="salvarConfigNotificacaoUI()" style="background:#16a34a;color:white;padding:10px 14px;border-radius:8px;font-weight:bold;flex:1">💾 Salvar</button>
         <button onclick="testarWhatsApp()" style="background:#25D366;color:white;padding:10px 14px;border-radius:8px;font-weight:bold;flex:1">📱 Testar</button>
       </div>
-      <small style="display:block;margin-top:8px;color:#64748b;line-height:1.3">Salve +34 644 71 81 99 e mande "I allow callmebot to send me messages" no WhatsApp</small>
+      <small style="display:block;margin-top:8px;color:#64748b;line-height:1.3">Salve +34 623 912 204 e mande "I allow callmebot to send me messages" no WhatsApp no WhatsApp</small>
     </div>
   </div>
 
@@ -963,7 +963,7 @@
       const msg = "🔔 *Teste Controle Financeiro*\n\nSe você recebeu esta mensagem, o WhatsApp está funcionando! ✅\n\nAgora você receberá todo dia às "+configNotificacao.horarioNotificacao+" as contas a vencer.";
       const ok = await enviarWhatsAppVencimentos(msg);
       if(ok){
-        alert("📱 Mensagem de teste enviada para "+tel+"!\nVerifique seu WhatsApp em até 30s.\nSe não chegar, verifique se mandou 'I allow callmebot to send me messages' para +34 644 10 53 84 e se apikey está correto.");
+        alert("📱 Mensagem de teste enviada para "+tel+"!\nVerifique seu WhatsApp em até 30s.\nSe não chegar, verifique se mandou 'I allow callmebot to send me messages' para +34 623 912 204 e se apikey está correto.");
       } else {
         alert("Falha ao enviar WhatsApp. Verifique telefone e apikey.");
       }
@@ -985,7 +985,7 @@
               body: corpo,
               icon: "./icon-192.png",
               badge: "./icon-96.png",
-              tag: "teste-agora-v11.5",
+              tag: "teste-agora-v12",
               vibrate: [200, 100, 200],
               requireInteraction: false,
               data: { url: "./" }
@@ -1013,7 +1013,7 @@
       };
 
       const executarTeste = async ()=>{
-        const titulo = "🔔 Teste v11.5" + (isAndroid ? " - Android" : " - PC");
+        const titulo = "🔔 Teste v12" + (isAndroid ? " - Android" : " - PC");
         const corpo = isAndroid ? "Se aparecer na barra superior, está funcionando! Deslize de cima para baixo para ver." : "Se você está vendo este pop-up no canto inferior direito, as notificações estão funcionando!";
         
         let ok = false;
@@ -1091,7 +1091,7 @@ function testarNotificacaoAgoraOLD(){
       } else {
         // granted - manda teste na hora
         const vencs = obterVencimentosProximos();
-        const ok = enviarTesteDireto("🔔 Teste - v11.5", vencs.length>0 ? "Funcionando! Você tem "+vencs.length+" conta(s) a vencer hoje" : "Se você está vendo este pop-up, as notificações estão funcionando! (teste sem contas)");
+        const ok = enviarTesteDireto("🔔 Teste - v12", vencs.length>0 ? "Funcionando! Você tem "+vencs.length+" conta(s) a vencer hoje" : "Se você está vendo este pop-up, as notificações estão funcionando! (teste sem contas)");
         if(ok){
           alert("✅ Teste enviado direto!\n\nSe não apareceu:\n- PC: Win+N para abrir central de notificações\n- Celular: deslize de cima para baixo\n- Verifique se Chrome tem permissão nas configurações do Android");
         } else {
@@ -1632,7 +1632,12 @@ function testarNotificacaoAgoraOLD(){
         });
         await firebaseDB.ref(FIREBASE_BACKUP_BASE_PATH + "/" + usuarioAtual.uid + "/configNotificacao").update({
           horario: configNotificacao.horarioNotificacao,
-          diasAntecedencia: configNotificacao.diasAntecedencia
+          diasAntecedencia: configNotificacao.diasAntecedencia,
+          whatsappAtivo: !!configNotificacao.whatsappAtivo,
+          whatsappTelefone: configNotificacao.whatsappTelefone||"",
+          whatsappApikey: configNotificacao.whatsappApikey||"",
+          pushAtivo: !!configNotificacao.pushAtivo,
+          atualizadoEm: new Date().toISOString()
         });
       }catch(e){ console.warn("Sync para push falhou", e); }
     }
@@ -3445,7 +3450,7 @@ function testarNotificacaoAgoraOLD(){
             if(!temCheckbox){
               document.body.innerHTML = '<div style="padding:30px;text-align:center;font-family:sans-serif"><h2>🔄 Atualizando para v9...</h2><p>Detectamos app antigo.</p><p>Limpando cache...</p></div>';
               caches.keys().then(ks=>Promise.all(ks.map(k=>caches.delete(k)))).then(()=>{
-                localStorage.setItem("app_versao","v11.5");
+                localStorage.setItem("app_versao","v12");
                 setTimeout(()=>location.href="./controle-financeiro.html?updated=v9&ts="+Date.now(), 1500);
               });
             }
@@ -3496,5 +3501,5 @@ function testarNotificacaoAgoraOLD(){
       }
     })();
   </script>
-<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a3040386a8ffa47a',t:'MTc4NzU5MTg4MA=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a30419338a8ea47a',t:'MTc4NzU5Mjc2OA=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
