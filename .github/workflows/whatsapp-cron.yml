@@ -1,4 +1,3 @@
-
 # Alternativa SEM precisar de Firebase Functions - roda direto no GitHub a cada 15 min
 # Envia WhatsApp mesmo com app fechado, sem precisar instalar Node no PC da empresa
 name: WhatsApp Vencimentos - Cron GitHub
