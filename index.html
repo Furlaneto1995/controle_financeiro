@@ -335,7 +335,7 @@
     
 
 <script>
-// Força atualização do WebAPK no Android - v11.3
+// Força atualização do WebAPK no Android - v11.5
 (function(){
   if('serviceWorker' in navigator){
     navigator.serviceWorker.ready.then(function(reg){
@@ -347,10 +347,10 @@
     const badge = document.querySelector("#versaoApp") || document.querySelector("div[style*='v9']");
     if(isPWA){
       const currentVersion = localStorage.getItem("app_versao");
-      if(currentVersion && currentVersion !== "v11.3"){
-        console.log("[WebAPK] Versão antiga detectada:", currentVersion, "-> v11.3, limpando");
+      if(currentVersion && currentVersion !== "v11.5"){
+        console.log("[WebAPK] Versão antiga detectada:", currentVersion, "-> v11.5, limpando");
         setTimeout(function(){
-          if(confirm("🔄 Nova versão v11.3 disponível! Seu app está na "+currentVersion+". Atualizar agora?")){
+          if(confirm("🔄 Nova versão v11.5 disponível! Seu app está na "+currentVersion+". Atualizar agora?")){
             caches.keys().then(function(keys){ return Promise.all(keys.map(function(k){return caches.delete(k)})); }).then(function(){
               location.href = "./?v=9.4&forceUpdate="+Date.now();
             });
@@ -367,7 +367,7 @@
   <script>
     // FORÇA ATUALIZAÇÃO DO PWA SE VERSÃO ANTIGA SEM LEMBRAR
     (function(){
-      const VERSAO_ATUAL = "v11.3";
+      const VERSAO_ATUAL = "v11.5";
       const versaoSalva = localStorage.getItem("app_versao");
       const precisaAtualizar = versaoSalva !== VERSAO_ATUAL;
       const temLembrar = !!document.getElementById && true; // será checado após DOM
@@ -412,7 +412,7 @@
     })();
   </script>
   <div id="loginScreen" class="login-screen">
-    <div class="login-card"><div style="position:absolute;top:10px;right:12px;font-size:10px;color:#64748b;background:#f1f5f9;padding:2px 6px;border-radius:6px">v11.3</div><div style="position:absolute;top:10px;right:12px;font-size:10px;color:#64748b;background:#f1f5f9;padding:2px 6px;border-radius:6px">v11.3</div>
+    <div class="login-card"><div style="position:absolute;top:10px;right:12px;font-size:10px;color:#64748b;background:#f1f5f9;padding:2px 6px;border-radius:6px">v11.5</div><div style="position:absolute;top:10px;right:12px;font-size:10px;color:#64748b;background:#f1f5f9;padding:2px 6px;border-radius:6px">v11.5</div>
       <h2>💰 Controle Financeiro</h2>
       <p>Entre com usuário e senha</p>
       <input type="text" id="loginUsuario" placeholder="Usuário" autocomplete="username">
@@ -522,6 +522,7 @@
     <div class="notif-header">
       <span>🔔 Vencimentos</span>
       <div style="display:flex;gap:6px;align-items:center">
+        <button onclick="enviarWhatsAppAgoraVencimentos()" style="font-size:11px;padding:5px 9px;background:#25D366;color:white;border-radius:7px;font-weight:bold">📱 Enviar Zap</button>
         <button onclick="solicitarPermissaoNotificacao()" style="font-size:11px;padding:5px 9px;background:#3b82f6;color:white;border-radius:7px;font-weight:bold">🔔 Ativar</button>
         <button onclick="fecharPainelNotificacoes()" style="background:transparent;border:none;font-size:18px;padding:2px 6px">✕</button>
       </div>
@@ -714,8 +715,8 @@
           const hm = (configNotificacao.horarioNotificacao||"08:00").split(":");
           const h = Number(hm[0]); const m = Number(hm[1]);
           const agora = new Date();
-          let prox = new Date(); prox.setHours(h,m,0,0);
-          if(prox <= agora) prox.setDate(prox.getDate()+1);
+          let prox = new Date(); prox.setHours(h,m,0,0); prox.setSeconds(0);
+          if(prox.getTime() < agora.getTime() - 2*60*1000) prox.setDate(prox.getDate()+1);
           txt2.innerHTML = "✅ Próxima: <b>"+prox.toLocaleString("pt-BR")+"</b> às "+configNotificacao.horarioNotificacao;
         }
       }, 300);
@@ -773,7 +774,8 @@
         proxima.setHours(h,m,0,0);
         proxima.setSeconds(0);
         proxima.setMilliseconds(0);
-        if(proxima <= agora){
+        // Grace de 2 minutos: se configurou 14:12 às 14:12:30, ainda considera hoje
+        if(proxima.getTime() < agora.getTime() - 2*60*1000){
           proxima.setDate(proxima.getDate()+1);
         }
         
@@ -871,23 +873,30 @@
       const apikey = configNotificacao.whatsappApikey||"";
       if(!tel || !apikey){
         console.warn("[WhatsApp] Telefone ou apikey vazio");
-        alert("⚠️ WhatsApp ativado mas falta telefone ou apikey!\nVá no painel de notificações e preencha.");
-        return false;
-      }
-      if(!/^[0-9]{10,15}$/.test(tel)){
-        alert("Telefone WhatsApp inválido. Use formato com DDI: 5541999999999 (55 Brasil + DDD + número)");
         return false;
       }
       const url = "https://api.callmebot.com/whatsapp.php?phone="+encodeURIComponent(tel)+"&text="+encodeURIComponent(mensagem)+"&apikey="+encodeURIComponent(apikey);
       try{
-        console.log("[WhatsApp] Enviando...", tel);
-        // CallMeBot precisa ser chamado via fetch com no-cors ou via img
-        // Usamos fetch com mode no-cors para não bloquear, e também tenta via Image
-        const img = new Image();
-        img.src = url;
-        // Tenta fetch também para log
-        fetch(url, {method:"GET", mode:"no-cors"}).then(()=>console.log("[WhatsApp] Fetch enviado (no-cors)")).catch(e=>console.warn(e));
-        console.log("[WhatsApp] Mensagem enviada para", tel);
+        console.log("[WhatsApp] Enviando para", tel, "msg len", mensagem.length);
+        // Método mais confiável para envio automático (sem gesto do usuário): Image + sendBeacon + fetch keepalive
+        try{
+          const img = new Image();
+          img.src = url;
+          console.log("[WhatsApp] Via Image enviado");
+        }catch(e){}
+        try{
+          if(navigator.sendBeacon){
+            const blob = new Blob([], {type: "application/x-www-form-urlencoded"});
+            navigator.sendBeacon(url, blob);
+            console.log("[WhatsApp] Via sendBeacon");
+          }
+        }catch(e){}
+        try{
+          fetch(url, {method:"GET", mode:"no-cors", keepalive: true, cache: "no-store"}).then(()=>console.log("[WhatsApp] Via fetch no-cors keepalive")).catch(()=>{});
+        }catch(e){}
+        // Salva log visível
+        const ind = document.getElementById("indicadorSync");
+        if(ind){ ind.innerText = "📱 Zap enviado "+new Date().toLocaleTimeString().slice(0,5); ind.style.opacity="1"; setTimeout(()=>ind.style.opacity="0.4", 5000); }
         return true;
       }catch(e){
         console.error("[WhatsApp] Erro", e);
@@ -927,6 +936,18 @@
     }
 
 
+
+    async function enviarWhatsAppAgoraVencimentos(){
+      const vencs = obterVencimentosProximos();
+      if(vencs.length===0){
+        alert("Nenhuma conta nos próximos "+configNotificacao.diasAntecedencia+" dias para enviar");
+        return;
+      }
+      const msg = montarMensagemWhatsApp(vencs);
+      const ok = await enviarWhatsAppVencimentos(msg);
+      alert(ok ? "📱 WhatsApp com "+vencs.length+" conta(s) enviado! Verifique WhatsApp" : "Falha");
+    }
+
     async function testarWhatsApp(){
       const tel = document.getElementById("configWhatsappTel")?.value || configNotificacao.whatsappTelefone;
       const key = document.getElementById("configWhatsappKey")?.value || configNotificacao.whatsappApikey;
@@ -964,7 +985,7 @@
               body: corpo,
               icon: "./icon-192.png",
               badge: "./icon-96.png",
-              tag: "teste-agora-v11.3",
+              tag: "teste-agora-v11.5",
               vibrate: [200, 100, 200],
               requireInteraction: false,
               data: { url: "./" }
@@ -992,7 +1013,7 @@
       };
 
       const executarTeste = async ()=>{
-        const titulo = "🔔 Teste v11.3" + (isAndroid ? " - Android" : " - PC");
+        const titulo = "🔔 Teste v11.5" + (isAndroid ? " - Android" : " - PC");
         const corpo = isAndroid ? "Se aparecer na barra superior, está funcionando! Deslize de cima para baixo para ver." : "Se você está vendo este pop-up no canto inferior direito, as notificações estão funcionando!";
         
         let ok = false;
@@ -1070,7 +1091,7 @@ function testarNotificacaoAgoraOLD(){
       } else {
         // granted - manda teste na hora
         const vencs = obterVencimentosProximos();
-        const ok = enviarTesteDireto("🔔 Teste - v11.3", vencs.length>0 ? "Funcionando! Você tem "+vencs.length+" conta(s) a vencer hoje" : "Se você está vendo este pop-up, as notificações estão funcionando! (teste sem contas)");
+        const ok = enviarTesteDireto("🔔 Teste - v11.5", vencs.length>0 ? "Funcionando! Você tem "+vencs.length+" conta(s) a vencer hoje" : "Se você está vendo este pop-up, as notificações estão funcionando! (teste sem contas)");
         if(ok){
           alert("✅ Teste enviado direto!\n\nSe não apareceu:\n- PC: Win+N para abrir central de notificações\n- Celular: deslize de cima para baixo\n- Verifique se Chrome tem permissão nas configurações do Android");
         } else {
@@ -1312,10 +1333,13 @@ function testarNotificacaoAgoraOLD(){
 
         // Envia WhatsApp e Telegram se ativados
         try{
-          if((configNotificacao.whatsappAtivo || configNotificacao.telegramAtivo) && (count>0 || forcarPush)){
+          // WhatsApp: envia se tiver conta dentro da antecedência, OU se for teste/agendamento forçado
+          const deveEnviarWpp = (count>0) || (forcarPush && (configNotificacao.whatsappAtivo || configNotificacao.telegramAtivo));
+          if(deveEnviarWpp){
             const mensagem = montarMensagemWhatsApp(vencimentos);
-            const jaEnviouHoje = localStorage.getItem("wpp_enviado_"+hojeISO+"_"+configNotificacao.horarioNotificacao);
-            if(forcarPush || !jaEnviouHoje){
+            const chaveWpp = "wpp_enviado_"+hojeISO+"_"+configNotificacao.horarioNotificacao+"_"+count;
+            const jaEnviouWppHoje = localStorage.getItem(chaveWpp);
+            if(forcarPush || !jaEnviouWppHoje){
               if(configNotificacao.whatsappAtivo) await enviarWhatsAppVencimentos(mensagem);
               if(configNotificacao.telegramAtivo) await enviarTelegramVencimentos(mensagem);
               localStorage.setItem("wpp_enviado_"+hojeISO+"_"+configNotificacao.horarioNotificacao, "1");
@@ -3421,7 +3445,7 @@ function testarNotificacaoAgoraOLD(){
             if(!temCheckbox){
               document.body.innerHTML = '<div style="padding:30px;text-align:center;font-family:sans-serif"><h2>🔄 Atualizando para v9...</h2><p>Detectamos app antigo.</p><p>Limpando cache...</p></div>';
               caches.keys().then(ks=>Promise.all(ks.map(k=>caches.delete(k)))).then(()=>{
-                localStorage.setItem("app_versao","v11.3");
+                localStorage.setItem("app_versao","v11.5");
                 setTimeout(()=>location.href="./controle-financeiro.html?updated=v9&ts="+Date.now(), 1500);
               });
             }
@@ -3472,5 +3496,5 @@ function testarNotificacaoAgoraOLD(){
       }
     })();
   </script>
-<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a303e091fb7ae030',t:'MTc4NzU5MDQ0OA=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a3040386a8ffa47a',t:'MTc4NzU5MTg4MA=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
