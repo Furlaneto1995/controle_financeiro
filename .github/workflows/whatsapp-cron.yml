@@ -1,8 +1,8 @@
-name: WhatsApp Vencimentos - v12 Final
+name: WhatsApp Vencimentos - v12.1 Final
 
 on:
   schedule:
-    - cron: '*/1 * * * *'
+    - cron: '*/30 * * * *'
   workflow_dispatch:
     inputs:
       force:
@@ -73,7 +73,7 @@ jobs:
               const cfg=user.configNotificacao;
               const resumo=user.dadosResumo;
               if(!cfg){ console.log(`${uid}: sem config`); continue; }
-              if(!resumo){ console.log(`${uid}: sem resumo - abra app v12 e faca login`); continue; }
+              if(!resumo){ console.log(`${uid}: sem resumo - abra app v12.1 e faca login`); continue; }
               if(!cfg.whatsappAtivo||!cfg.whatsappTelefone||!cfg.whatsappApikey){ console.log(`${uid}: WhatsApp nao configurado`); continue; }
               
               const [hC,mC]=(cfg.horario||"08:00").split(":").map(Number);
