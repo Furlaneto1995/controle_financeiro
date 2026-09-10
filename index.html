@@ -335,7 +335,7 @@
     
 
 <script>
-// Força atualização do WebAPK no Android - v12.3
+// Força atualização do WebAPK no Android - v12.4
 (function(){
   if('serviceWorker' in navigator){
     navigator.serviceWorker.ready.then(function(reg){
@@ -347,10 +347,10 @@
     const badge = document.querySelector("#versaoApp") || document.querySelector("div[style*='v9']");
     if(isPWA){
       const currentVersion = localStorage.getItem("app_versao");
-      if(currentVersion && currentVersion !== "v12.3"){
-        console.log("[WebAPK] Versão antiga detectada:", currentVersion, "-> v12.3, limpando");
+      if(currentVersion && currentVersion !== "v12.4"){
+        console.log("[WebAPK] Versão antiga detectada:", currentVersion, "-> v12.4, limpando");
         setTimeout(function(){
-          if(confirm("🔄 Nova versão v12.3 disponível! Seu app está na "+currentVersion+". Atualizar agora?")){
+          if(confirm("🔄 Nova versão v12.4 disponível! Seu app está na "+currentVersion+". Atualizar agora?")){
             caches.keys().then(function(keys){ return Promise.all(keys.map(function(k){return caches.delete(k)})); }).then(function(){
               location.href = "./?v=9.4&forceUpdate="+Date.now();
             });
@@ -367,7 +367,7 @@
   <script>
     // FORÇA ATUALIZAÇÃO DO PWA SE VERSÃO ANTIGA SEM LEMBRAR
     (function(){
-      const VERSAO_ATUAL = "v12.3";
+      const VERSAO_ATUAL = "v12.4";
       const versaoSalva = localStorage.getItem("app_versao");
       const precisaAtualizar = versaoSalva !== VERSAO_ATUAL;
       const temLembrar = !!document.getElementById && true; // será checado após DOM
@@ -412,7 +412,7 @@
     })();
   </script>
   <div id="loginScreen" class="login-screen">
-    <div class="login-card"><div style="position:absolute;top:10px;right:12px;font-size:10px;color:#64748b;background:#f1f5f9;padding:2px 6px;border-radius:6px">v12.3</div>
+    <div class="login-card"><div style="position:absolute;top:10px;right:12px;font-size:10px;color:#64748b;background:#f1f5f9;padding:2px 6px;border-radius:6px">v12.4</div>
       <h2>💰 Controle Financeiro</h2>
       <p>Entre com usuário e senha</p>
       <input type="text" id="loginUsuario" placeholder="Usuário" autocomplete="username">
@@ -858,26 +858,46 @@
 
     function iniciarAgendamentoNotificacao(){
       if(timerAgendamentoNotificacao) clearInterval(timerAgendamentoNotificacao);
-      // Verifica a cada 60 segundos se chegou no horário programado
-      timerAgendamentoNotificacao = setInterval(()=>{
+
+      const checarHorarioAgendado = ()=>{
         try{
-          if(!configNotificacao.pushAtivo) return;
-          if(document.getElementById("appContainer").style.display === "none") return;
+          const app = document.getElementById("appContainer");
+          if(!app || app.style.display === "none") return;
+
           const agora = new Date();
-          const hojeISO = agora.toISOString().slice(0,10);
-          const horaAtual = agora.getHours().toString().padStart(2,"0")+":"+agora.getMinutes().toString().padStart(2,"0");
-          // Se já notificou hoje neste horário, não repete
-          if(configNotificacao.ultimoAvisoHorario === hojeISO+"_"+configNotificacao.horarioNotificacao) return;
-          if(horaAtual === configNotificacao.horarioNotificacao){
-            const vencimentos = obterVencimentosProximos();
-            if(vencimentos.length>0){
-              verificarNotificacoes(true);
-              configNotificacao.ultimoAvisoHorario = hojeISO+"_"+configNotificacao.horarioNotificacao;
-              salvarConfigNotificacao();
-            }
+          const hojeISO = dataHojeISO();
+          const horario = configNotificacao.horarioNotificacao || "08:00";
+          const partes = horario.split(":");
+          const horarioDeHoje = new Date();
+          horarioDeHoje.setHours(Number(partes[0]) || 0, Number(partes[1]) || 0, 0, 0);
+          const chaveWpp = "wpp_enviado_v2_" + hojeISO + "_" + horario;
+          const temCanalMensagens = !!(configNotificacao.whatsappAtivo || configNotificacao.telegramAtivo);
+          const precisaEnviarMensagem = temCanalMensagens
+            && !localStorage.getItem(chaveWpp)
+            && Date.now() >= horarioDeHoje.getTime();
+
+          const horaAtual = String(agora.getHours()).padStart(2,"0") + ":" + String(agora.getMinutes()).padStart(2,"0");
+          const chavePush = hojeISO + "_" + horario;
+          const precisaDispararPush = configNotificacao.pushAtivo
+            && horaAtual === horario
+            && configNotificacao.ultimoAvisoHorario !== chavePush;
+
+          if(precisaDispararPush){
+            // Marca antes da chamada para não repetir enquanto a operação assíncrona termina.
+            configNotificacao.ultimoAvisoHorario = chavePush;
+            salvarConfigNotificacao();
+            verificarNotificacoes(true);
+          }else if(precisaEnviarMensagem){
+            // Não depende de o navegador executar exatamente no minuto configurado.
+            console.log("[Agendamento] Horário atingido ou retomado; verificando envio", horario);
+            verificarNotificacoes(false);
           }
-        }catch(e){ console.warn(e); }
-      }, 60000);
+        }catch(e){ console.warn("[Agendamento] erro na checagem", e); }
+      };
+
+      // Faz uma checagem imediata ao salvar/entrar e depois verifica a cada 15 s.
+      checarHorarioAgendado();
+      timerAgendamentoNotificacao = setInterval(checarHorarioAgendado, 15000);
     }
     let timerProximaNotificacao = null;
     
@@ -995,11 +1015,11 @@
     function limparMarcadoresEnvioAntigos(hojeISO, horario){
       // Remove marcadores de envio de dias/horários antigos para não acumular lixo no localStorage
       try{
-        const chaveAtual = "wpp_enviado_" + hojeISO + "_" + horario;
+        const chaveAtual = "wpp_enviado_v2_" + hojeISO + "_" + horario;
         const remover = [];
         for(let i = 0; i < localStorage.length; i++){
           const k = localStorage.key(i);
-          if(k && k.indexOf("wpp_enviado_") === 0 && k !== chaveAtual) remover.push(k);
+          if(k && k.indexOf("wpp_enviado_v2_") === 0 && k !== chaveAtual) remover.push(k);
         }
         remover.forEach(k => localStorage.removeItem(k));
       }catch(e){}
@@ -1132,7 +1152,7 @@
               body: corpo,
               icon: "./icon-192.png",
               badge: "./icon-96.png",
-              tag: "teste-agora-v12.3",
+              tag: "teste-agora-v12.4",
               vibrate: [200, 100, 200],
               requireInteraction: false,
               data: { url: "./" }
@@ -1160,7 +1180,7 @@
       };
 
       const executarTeste = async ()=>{
-        const titulo = "🔔 Teste v12.3" + (isAndroid ? " - Android" : " - PC");
+        const titulo = "🔔 Teste v12.4" + (isAndroid ? " - Android" : " - PC");
         const corpo = isAndroid ? "Se aparecer na barra superior, está funcionando! Deslize de cima para baixo para ver." : "Se você está vendo este pop-up no canto inferior direito, as notificações estão funcionando!";
         
         let ok = false;
@@ -1238,7 +1258,7 @@ function testarNotificacaoAgoraOLD(){
       } else {
         // granted - manda teste na hora
         const vencs = obterVencimentosProximos();
-        const ok = enviarTesteDireto("🔔 Teste - v12.3", vencs.length>0 ? "Funcionando! Você tem "+vencs.length+" conta(s) a vencer hoje" : "Se você está vendo este pop-up, as notificações estão funcionando! (teste sem contas)");
+        const ok = enviarTesteDireto("🔔 Teste - v12.4", vencs.length>0 ? "Funcionando! Você tem "+vencs.length+" conta(s) a vencer hoje" : "Se você está vendo este pop-up, as notificações estão funcionando! (teste sem contas)");
         if(ok){
           alert("✅ Teste enviado direto!\n\nSe não apareceu:\n- PC: Win+N para abrir central de notificações\n- Celular: deslize de cima para baixo\n- Verifique se Chrome tem permissão nas configurações do Android");
         } else {
@@ -1356,6 +1376,47 @@ function testarNotificacaoAgoraOLD(){
       if(isAtivo) fecharPainelNotificacoes();
       else abrirPainelNotificacoes();
     }
+    let envioMensagensEmAndamento = false;
+    async function verificarEnviosMensagens(vencimentos){
+      if(envioMensagensEmAndamento) return;
+      if(!vencimentos || vencimentos.length === 0) return;
+      if(!(configNotificacao.whatsappAtivo || configNotificacao.telegramAtivo)) return;
+
+      const dataLocalISO = dataHojeISO();
+      const horario = configNotificacao.horarioNotificacao || "08:00";
+      const chaveWpp = "wpp_enviado_v2_" + dataLocalISO + "_" + horario;
+      if(localStorage.getItem(chaveWpp)) return;
+
+      const partesHorario = horario.split(":");
+      const horarioDeHoje = new Date();
+      horarioDeHoje.setHours(Number(partesHorario[0]) || 0, Number(partesHorario[1]) || 0, 0, 0);
+      if(Date.now() < horarioDeHoje.getTime()) return;
+
+      envioMensagensEmAndamento = true;
+      try{
+        const mensagem = montarMensagemWhatsApp(vencimentos);
+        let algumCanalEnviado = false;
+        if(configNotificacao.whatsappAtivo){
+          algumCanalEnviado = (await enviarWhatsAppVencimentos(mensagem)) || algumCanalEnviado;
+        }
+        if(configNotificacao.telegramAtivo){
+          algumCanalEnviado = (await enviarTelegramVencimentos(mensagem)) || algumCanalEnviado;
+        }
+
+        if(algumCanalEnviado){
+          localStorage.setItem(chaveWpp, String(Date.now()));
+          limparMarcadoresEnvioAntigos(dataLocalISO, horario);
+          console.log("[WhatsApp/Telegram] Enviado 1x hoje (a partir das " + horario + ")");
+        }else{
+          console.warn("[WhatsApp/Telegram] Nenhum canal confirmou o envio; será tentado novamente.");
+        }
+      }catch(e){
+        console.warn("[WhatsApp/Telegram] erro no envio automático", e);
+      }finally{
+        envioMensagensEmAndamento = false;
+      }
+    }
+
     async function verificarNotificacoes(forcarPush = false){
       try{
         carregarConfigNotificacao();
@@ -1431,6 +1492,8 @@ function testarNotificacaoAgoraOLD(){
           }
         }
 
+        await verificarEnviosMensagens(vencimentos);
+
         // Notificação apenas nos dias de antecedência programados (NÃO todos os dias)
         if(configNotificacao.pushAtivo && "Notification" in window && Notification.permission==="granted"){
           const jaNotificouHoje = configNotificacao.ultimoAvisoData === hojeISO;
@@ -1477,27 +1540,6 @@ function testarNotificacaoAgoraOLD(){
 
         // Tenta agendar notificação que funciona mesmo com app fechado (Trigger API)
         try{ agendarNotificacaoParaAppFechado(); }catch(e){}
-
-        // Envia WhatsApp e Telegram se ativados — no máximo 1x por dia, a partir do horário configurado.
-        // Sem reenvio a cada login/hora (a chave de "já enviado" é a mesma na leitura e na gravação).
-        try{
-          if(count > 0 && (configNotificacao.whatsappAtivo || configNotificacao.telegramAtivo)){
-            const dataLocalISO = dataHojeISO();
-            const chaveWpp = "wpp_enviado_" + dataLocalISO + "_" + configNotificacao.horarioNotificacao;
-            const jaEnviouWppHoje = localStorage.getItem(chaveWpp);
-            const partesHorario = (configNotificacao.horarioNotificacao || "08:00").split(":");
-            const horarioDeHoje = new Date();
-            horarioDeHoje.setHours(Number(partesHorario[0]) || 0, Number(partesHorario[1]) || 0, 0, 0);
-            if(!jaEnviouWppHoje && Date.now() >= horarioDeHoje.getTime()){
-              const mensagem = montarMensagemWhatsApp(vencimentos);
-              if(configNotificacao.whatsappAtivo) await enviarWhatsAppVencimentos(mensagem);
-              if(configNotificacao.telegramAtivo) await enviarTelegramVencimentos(mensagem);
-              localStorage.setItem(chaveWpp, String(Date.now()));
-              limparMarcadoresEnvioAntigos(dataLocalISO, configNotificacao.horarioNotificacao);
-              console.log("[WhatsApp/Telegram] Enviado 1x hoje (a partir das " + configNotificacao.horarioNotificacao + ")");
-            }
-          }
-        }catch(e){ console.warn("[WhatsApp] erro auto", e); }
 
       }catch(e){
         console.error("Erro verificarNotificacoes", e);
@@ -3635,7 +3677,7 @@ function testarNotificacaoAgoraOLD(){
             if(!temCheckbox){
               document.body.innerHTML = '<div style="padding:30px;text-align:center;font-family:sans-serif"><h2>🔄 Atualizando para v9...</h2><p>Detectamos app antigo.</p><p>Limpando cache...</p></div>';
               caches.keys().then(ks=>Promise.all(ks.map(k=>caches.delete(k)))).then(()=>{
-                localStorage.setItem("app_versao","v12.3");
+                localStorage.setItem("app_versao","v12.4");
                 setTimeout(()=>location.href="./controle-financeiro.html?updated=v9&ts="+Date.now(), 1500);
               });
             }
@@ -3686,5 +3728,5 @@ function testarNotificacaoAgoraOLD(){
       }
     })();
   </script>
-</body>
+<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a390d3c58c20afcb',t:'MTc4OTA2ODQxNg=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
