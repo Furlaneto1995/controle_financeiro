@@ -412,7 +412,7 @@
     })();
   </script>
   <div id="loginScreen" class="login-screen">
-    <div class="login-card"><div style="position:absolute;top:10px;right:12px;font-size:10px;color:#64748b;background:#f1f5f9;padding:2px 6px;border-radius:6px">v12.1</div><div style="position:absolute;top:10px;right:12px;font-size:10px;color:#64748b;background:#f1f5f9;padding:2px 6px;border-radius:6px">v12.1</div>
+    <div class="login-card"><div style="position:absolute;top:10px;right:12px;font-size:10px;color:#64748b;background:#f1f5f9;padding:2px 6px;border-radius:6px">v12.2</div>
       <h2>💰 Controle Financeiro</h2>
       <p>Entre com usuário e senha</p>
       <input type="text" id="loginUsuario" placeholder="Usuário" autocomplete="username">
@@ -619,31 +619,29 @@
     };
     let timerAgendamentoNotificacao = null;
 
-    function chaveConfigNotif(){
+    function chaveConfigNotif(uid){
       try{
-        return STORAGE_KEY_BASE + "_notifConfig_" + (usuarioAtual && usuarioAtual.uid ? usuarioAtual.uid : "geral");
+        const id = uid || (usuarioAtual && usuarioAtual.uid ? usuarioAtual.uid : "geral");
+        return STORAGE_KEY_BASE + "_notifConfig_" + id;
       }catch(e){
         return STORAGE_KEY_BASE + "_notifConfig_geral";
       }
     }
-    function carregarConfigNotificacao(){
-      try{
-        const raw = localStorage.getItem(chaveConfigNotif());
-        if(raw){
-          const obj = JSON.parse(raw);
-          configNotificacao.diasAntecedencia = Math.max(1, Math.min(30, Number(obj.diasAntecedencia) || 3));
-          configNotificacao.pushAtivo = obj.pushAtivo !== false;
-          configNotificacao.ultimoAvisoData = obj.ultimoAvisoData || "";
-          configNotificacao.horarioNotificacao = obj.horarioNotificacao || "08:00";
-          configNotificacao.ultimoAvisoHorario = obj.ultimoAvisoHorario || "";
-          configNotificacao.whatsappTelefone = obj.whatsappTelefone || "";
-          configNotificacao.whatsappApikey = obj.whatsappApikey || "";
-          configNotificacao.whatsappAtivo = !!obj.whatsappAtivo;
-          configNotificacao.telegramToken = obj.telegramToken || "";
-          configNotificacao.telegramChatId = obj.telegramChatId || "";
-          configNotificacao.telegramAtivo = !!obj.telegramAtivo;
-        }
-      }catch(e){ console.warn("Erro ao carregar config notif", e); }
+    function aplicarObjetoConfigNotificacao(obj){
+      if(!obj || typeof obj !== "object") return;
+      if(obj.diasAntecedencia != null) configNotificacao.diasAntecedencia = Math.max(1, Math.min(30, Number(obj.diasAntecedencia) || 3));
+      if(obj.pushAtivo != null) configNotificacao.pushAtivo = obj.pushAtivo !== false;
+      if(obj.ultimoAvisoData != null) configNotificacao.ultimoAvisoData = obj.ultimoAvisoData || "";
+      if(obj.horarioNotificacao || obj.horario) configNotificacao.horarioNotificacao = obj.horarioNotificacao || obj.horario || "08:00";
+      if(obj.ultimoAvisoHorario != null) configNotificacao.ultimoAvisoHorario = obj.ultimoAvisoHorario || "";
+      if(obj.whatsappTelefone != null) configNotificacao.whatsappTelefone = String(obj.whatsappTelefone || "").replace(/\D/g,"");
+      if(obj.whatsappApikey != null) configNotificacao.whatsappApikey = String(obj.whatsappApikey || "");
+      if(obj.whatsappAtivo != null) configNotificacao.whatsappAtivo = !!obj.whatsappAtivo;
+      if(obj.telegramToken != null) configNotificacao.telegramToken = obj.telegramToken || "";
+      if(obj.telegramChatId != null) configNotificacao.telegramChatId = obj.telegramChatId || "";
+      if(obj.telegramAtivo != null) configNotificacao.telegramAtivo = !!obj.telegramAtivo;
+    }
+    function preencherCamposConfigNotificacao(){
       const inputDias = document.getElementById("configDiasNotif");
       const togglePush = document.getElementById("toggleNotifPush");
       const inputHorario = document.getElementById("configHorarioNotif");
@@ -653,6 +651,7 @@
       const inputTgToken = document.getElementById("configTelegramToken");
       const inputTgChat = document.getElementById("configTelegramChat");
       const toggleTg = document.getElementById("toggleTelegram");
+      const statusWpp = document.getElementById("txtStatusWhatsapp");
       if(inputDias) inputDias.value = configNotificacao.diasAntecedencia;
       if(togglePush) togglePush.checked = configNotificacao.pushAtivo;
       if(inputHorario) inputHorario.value = configNotificacao.horarioNotificacao;
@@ -662,11 +661,123 @@
       if(inputTgToken) inputTgToken.value = configNotificacao.telegramToken || "";
       if(inputTgChat) inputTgChat.value = configNotificacao.telegramChatId || "";
       if(toggleTg) toggleTg.checked = !!configNotificacao.telegramAtivo;
+      if(statusWpp){
+        if(configNotificacao.whatsappTelefone && configNotificacao.whatsappApikey){
+          statusWpp.innerText = configNotificacao.whatsappAtivo
+            ? "✅ WhatsApp ativo e salvo na sua conta"
+            : "Dados salvos na conta, mas o envio está desativado";
+        }else{
+          statusWpp.innerText = "Salvo na sua conta (nuvem) e neste aparelho. Não se perde ao fechar o app.";
+        }
+      }
+    }
+    function lerConfigNotificacaoLocalStorage(){
+      const chaves = [];
+      const atual = chaveConfigNotif();
+      chaves.push(atual);
+      const geral = chaveConfigNotif("geral");
+      if(chaves.indexOf(geral) < 0) chaves.push(geral);
+      try{
+        for(let i = 0; i < localStorage.length; i++){
+          const k = localStorage.key(i);
+          if(k && k.indexOf(STORAGE_KEY_BASE + "_notifConfig_") === 0 && chaves.indexOf(k) < 0){
+            chaves.push(k);
+          }
+        }
+      }catch(e){}
+      let melhor = null;
+      chaves.forEach(k => {
+        try{
+          const raw = localStorage.getItem(k);
+          if(!raw) return;
+          const obj = JSON.parse(raw);
+          if(!obj || typeof obj !== "object") return;
+          const score = (obj.whatsappTelefone ? 2 : 0) + (obj.whatsappApikey ? 2 : 0) + (obj.whatsappAtivo ? 1 : 0) + ((obj.horarioNotificacao || obj.horario) ? 1 : 0);
+          if(!melhor || score > melhor.score) melhor = { obj, score };
+        }catch(e){}
+      });
+      return melhor ? melhor.obj : null;
+    }
+    function carregarConfigNotificacao(){
+      try{
+        const obj = lerConfigNotificacaoLocalStorage();
+        if(obj) aplicarObjetoConfigNotificacao(obj);
+      }catch(e){ console.warn("Erro ao carregar config notif", e); }
+      preencherCamposConfigNotificacao();
+    }
+    function montarPacoteConfigNotificacao(){
+      return {
+        horario: configNotificacao.horarioNotificacao,
+        horarioNotificacao: configNotificacao.horarioNotificacao,
+        diasAntecedencia: configNotificacao.diasAntecedencia,
+        whatsappAtivo: !!configNotificacao.whatsappAtivo,
+        whatsappTelefone: configNotificacao.whatsappTelefone || "",
+        whatsappApikey: configNotificacao.whatsappApikey || "",
+        pushAtivo: !!configNotificacao.pushAtivo,
+        telegramAtivo: !!configNotificacao.telegramAtivo,
+        telegramToken: configNotificacao.telegramToken || "",
+        telegramChatId: configNotificacao.telegramChatId || "",
+        atualizadoEm: new Date().toISOString()
+      };
     }
     function salvarConfigNotificacao(){
       try{
-        localStorage.setItem(chaveConfigNotif(), JSON.stringify(configNotificacao));
+        const json = JSON.stringify(configNotificacao);
+        localStorage.setItem(chaveConfigNotif(), json);
+        localStorage.setItem(chaveConfigNotif("geral"), json);
       }catch(e){ console.warn("Erro ao salvar config notif", e); }
+      sincronizarConfigNotificacaoNuvem();
+    }
+    async function sincronizarConfigNotificacaoNuvem(){
+      try{
+        if(!usuarioAtual || usuarioAtual.modoLocal) return false;
+        if(!firebaseDB && !inicializarFirebase(true)) return false;
+        if(!firebaseDB) return false;
+        await firebaseDB.ref(FIREBASE_BACKUP_BASE_PATH + "/" + usuarioAtual.uid + "/configNotificacao").update(montarPacoteConfigNotificacao());
+        console.log("[Config] WhatsApp/notificações salvos na nuvem");
+        return true;
+      }catch(e){
+        console.warn("[Config] Falha ao salvar na nuvem", e);
+        return false;
+      }
+    }
+    async function restaurarConfigNotificacaoDaNuvem(){
+      try{
+        if(!usuarioAtual || usuarioAtual.modoLocal || !firebaseDB) return false;
+        const snap = await firebaseDB.ref(FIREBASE_BACKUP_BASE_PATH + "/" + usuarioAtual.uid + "/configNotificacao").once("value");
+        if(!snap.exists()) return false;
+        const nuvem = snap.val() || {};
+        const localTemZap = !!(configNotificacao.whatsappTelefone && configNotificacao.whatsappApikey);
+        const nuvemTemZap = !!(nuvem.whatsappTelefone && nuvem.whatsappApikey);
+        if(nuvemTemZap || !localTemZap){
+          aplicarObjetoConfigNotificacao(nuvem);
+        }else{
+          if(!configNotificacao.whatsappTelefone && nuvem.whatsappTelefone){
+            configNotificacao.whatsappTelefone = String(nuvem.whatsappTelefone).replace(/\D/g,"");
+          }
+          if(!configNotificacao.whatsappApikey && nuvem.whatsappApikey){
+            configNotificacao.whatsappApikey = nuvem.whatsappApikey;
+          }
+          if(nuvem.whatsappAtivo) configNotificacao.whatsappAtivo = true;
+          if(nuvem.horario || nuvem.horarioNotificacao){
+            configNotificacao.horarioNotificacao = nuvem.horarioNotificacao || nuvem.horario;
+          }
+        }
+        try{
+          const json = JSON.stringify(configNotificacao);
+          localStorage.setItem(chaveConfigNotif(), json);
+          localStorage.setItem(chaveConfigNotif("geral"), json);
+        }catch(e){}
+        preencherCamposConfigNotificacao();
+        console.log("[Config] Restaurado da nuvem", {
+          ativo: configNotificacao.whatsappAtivo,
+          tel: (configNotificacao.whatsappTelefone || "").slice(0, 4) + "****"
+        });
+        return true;
+      }catch(e){
+        console.warn("[Config] Falha ao restaurar da nuvem", e);
+        return false;
+      }
     }
         function salvarConfigNotificacaoUI(){
       const painelNotif = document.getElementById("painelConfigNotificacao");
@@ -700,7 +811,18 @@
       if(toggleWpp){
         configNotificacao.whatsappAtivo = !!toggleWpp.checked;
       }
+      if(configNotificacao.whatsappTelefone && configNotificacao.whatsappApikey && toggleWpp && toggleWpp.checked === false){
+        // mantém telefone/api mesmo se o envio estiver desligado
+      }
       salvarConfigNotificacao();
+      sincronizarConfigNotificacaoNuvem().then(ok=>{
+        const statusWpp = document.getElementById("txtStatusWhatsapp");
+        if(statusWpp){
+          statusWpp.innerText = ok
+            ? "✅ Salvo neste aparelho e na nuvem (" + new Date().toLocaleString("pt-BR") + ")"
+            : "✅ Salvo neste aparelho" + (usuarioAtual && !usuarioAtual.modoLocal ? " (nuvem indisponível agora)" : "");
+        }
+      });
       if(window.timerProximaNotificacao) clearTimeout(window.timerProximaNotificacao);
       if(window.timerAgendamentoNotificacao) clearInterval(window.timerAgendamentoNotificacao);
       iniciarAgendamentoNotificacao();
@@ -724,8 +846,14 @@
       fecharPainelConfigNotificacao();
       fecharPainelConfigWhatsapp();
       const ind = document.getElementById("indicadorSync");
-      if(ind){ ind.innerText = "✅ Config salva "+configNotificacao.horarioNotificacao; ind.style.opacity="1"; setTimeout(()=>{ ind.style.opacity="0.4"; }, 3000); }
+      const naNuvem = usuarioAtual && !usuarioAtual.modoLocal;
+      if(ind){ ind.innerText = naNuvem ? "✅ Config salva na nuvem" : "✅ Config salva neste aparelho"; ind.style.opacity="1"; setTimeout(()=>{ ind.style.opacity="0.4"; }, 3000); }
       console.log("✅ Config salva:", configNotificacao);
+      if(naNuvem){
+        setTimeout(()=>alert("✅ Configuração salva neste aparelho e na sua conta.\n\nTelefone, API e o interruptor do WhatsApp voltam automaticamente no próximo login."), 50);
+      }else{
+        setTimeout(()=>alert("✅ Configuração salva neste aparelho.\n\nNo modo local ela não vai para a nuvem. Entre com usuário e senha para não perder se limpar o cache."), 50);
+      }
     }
 
     function iniciarAgendamentoNotificacao(){
@@ -962,7 +1090,10 @@
       configNotificacao.whatsappTelefone = tel.replace(/\D/g,"");
       configNotificacao.whatsappApikey = key.trim();
       configNotificacao.whatsappAtivo = true;
+      const checkWpp = document.getElementById("toggleWhatsapp");
+      if(checkWpp) checkWpp.checked = true;
       salvarConfigNotificacao();
+      await sincronizarConfigNotificacaoNuvem();
       const msg = "🔔 *Teste Controle Financeiro*\n\nSe você recebeu esta mensagem, o WhatsApp está funcionando! ✅\n\nAgora você receberá todo dia às "+configNotificacao.horarioNotificacao+" as contas a vencer.";
       const ok = await enviarWhatsAppVencimentos(msg);
       if(ok){
@@ -1633,15 +1764,7 @@ function testarNotificacaoAgoraOLD(){
           pendentes: resumo.slice(0,100),
           atualizadoEm: new Date().toISOString()
         });
-        await firebaseDB.ref(FIREBASE_BACKUP_BASE_PATH + "/" + usuarioAtual.uid + "/configNotificacao").update({
-          horario: configNotificacao.horarioNotificacao,
-          diasAntecedencia: configNotificacao.diasAntecedencia,
-          whatsappAtivo: !!configNotificacao.whatsappAtivo,
-          whatsappTelefone: configNotificacao.whatsappTelefone||"",
-          whatsappApikey: configNotificacao.whatsappApikey||"",
-          pushAtivo: !!configNotificacao.pushAtivo,
-          atualizadoEm: new Date().toISOString()
-        });
+        await firebaseDB.ref(FIREBASE_BACKUP_BASE_PATH + "/" + usuarioAtual.uid + "/configNotificacao").update(montarPacoteConfigNotificacao());
       }catch(e){ console.warn("Sync para push falhou", e); }
     }
 
@@ -1987,6 +2110,10 @@ function testarNotificacaoAgoraOLD(){
               const pacoteAuto = snapshotAuto.val();
               try{
                 const backupAuto = await descriptografarBackup(pacoteAuto);
+                if(backupAuto && backupAuto.configNotificacao){
+                  const localTemZap = !!(configNotificacao.whatsappTelefone && configNotificacao.whatsappApikey);
+                  if(!localTemZap) aplicarObjetoConfigNotificacao(backupAuto.configNotificacao);
+                }
                 if(backupAuto && Array.isArray(backupAuto.dados) && backupAuto.dados.length>0){
                   const backupNormalizado = normalizarDadosBackup(backupAuto.dados);
                   const dataBackupInfo = pacoteAuto.atualizadoEmBR || backupAuto.atualizadoEmBR || "recentemente";
@@ -2065,6 +2192,7 @@ function testarNotificacaoAgoraOLD(){
         document.getElementById("appContainer").style.display = "flex";
         document.getElementById("usuarioLogado").innerText = "Usuário: " + usuario;
         carregarConfigNotificacao();
+        await restaurarConfigNotificacaoDaNuvem();
         iniciarAgendamentoNotificacao();
         atualizarTabela();
         // Inicializa FCM Push para funcionar fechado (Opção 2)
@@ -2539,7 +2667,18 @@ function testarNotificacaoAgoraOLD(){
         atualizadoEmISO: agora.toISOString(),
         atualizadoEmBR: agora.toLocaleString("pt-BR"),
         origem: location.href,
-        versao: 2
+        versao: 2,
+        configNotificacao: {
+          diasAntecedencia: configNotificacao.diasAntecedencia,
+          pushAtivo: !!configNotificacao.pushAtivo,
+          horarioNotificacao: configNotificacao.horarioNotificacao,
+          whatsappAtivo: !!configNotificacao.whatsappAtivo,
+          whatsappTelefone: configNotificacao.whatsappTelefone || "",
+          whatsappApikey: configNotificacao.whatsappApikey || "",
+          telegramAtivo: !!configNotificacao.telegramAtivo,
+          telegramToken: configNotificacao.telegramToken || "",
+          telegramChatId: configNotificacao.telegramChatId || ""
+        }
       };
     }
 
@@ -2638,6 +2777,10 @@ function testarNotificacaoAgoraOLD(){
         );
         if(!confirmar){ return; }
         dados = normalizarDadosBackup(backup.dados);
+        if(backup.configNotificacao){
+          aplicarObjetoConfigNotificacao(backup.configNotificacao);
+          salvarConfigNotificacao();
+        }
         cancelar(false);
         salvar();
         atualizarTabela();
@@ -3501,6 +3644,12 @@ function testarNotificacaoAgoraOLD(){
         }
       } else {
         document.getElementById("loginUsuario").focus();
+      }
+    })();
+  </script>
+</body>
+</html>
+);
       }
     })();
   </script>
