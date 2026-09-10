@@ -992,6 +992,19 @@
       alert(ok ? "✈️ Telegram enviado! Verifique seu Telegram" : "Falha. Verifique token e chat ID. Veja console.");
     }
 
+    function limparMarcadoresEnvioAntigos(hojeISO, horario){
+      // Remove marcadores de envio de dias/horários antigos para não acumular lixo no localStorage
+      try{
+        const chaveAtual = "wpp_enviado_" + hojeISO + "_" + horario;
+        const remover = [];
+        for(let i = 0; i < localStorage.length; i++){
+          const k = localStorage.key(i);
+          if(k && k.indexOf("wpp_enviado_") === 0 && k !== chaveAtual) remover.push(k);
+        }
+        remover.forEach(k => localStorage.removeItem(k));
+      }catch(e){}
+    }
+
     async function enviarWhatsAppVencimentos(mensagem){
       if(!configNotificacao.whatsappAtivo){
         console.log("[WhatsApp] Desativado");
@@ -1465,19 +1478,23 @@ function testarNotificacaoAgoraOLD(){
         // Tenta agendar notificação que funciona mesmo com app fechado (Trigger API)
         try{ agendarNotificacaoParaAppFechado(); }catch(e){}
 
-        // Envia WhatsApp e Telegram se ativados
+        // Envia WhatsApp e Telegram se ativados — no máximo 1x por dia, a partir do horário configurado.
+        // Sem reenvio a cada login/hora (a chave de "já enviado" é a mesma na leitura e na gravação).
         try{
-          // WhatsApp: envia se tiver conta dentro da antecedência, OU se for teste/agendamento forçado
-          const deveEnviarWpp = (count>0) || (forcarPush && (configNotificacao.whatsappAtivo || configNotificacao.telegramAtivo));
-          if(deveEnviarWpp){
-            const mensagem = montarMensagemWhatsApp(vencimentos);
-            const chaveWpp = "wpp_enviado_"+hojeISO+"_"+configNotificacao.horarioNotificacao+"_"+count;
+          if(count > 0 && (configNotificacao.whatsappAtivo || configNotificacao.telegramAtivo)){
+            const dataLocalISO = dataHojeISO();
+            const chaveWpp = "wpp_enviado_" + dataLocalISO + "_" + configNotificacao.horarioNotificacao;
             const jaEnviouWppHoje = localStorage.getItem(chaveWpp);
-            if(forcarPush || !jaEnviouWppHoje){
+            const partesHorario = (configNotificacao.horarioNotificacao || "08:00").split(":");
+            const horarioDeHoje = new Date();
+            horarioDeHoje.setHours(Number(partesHorario[0]) || 0, Number(partesHorario[1]) || 0, 0, 0);
+            if(!jaEnviouWppHoje && Date.now() >= horarioDeHoje.getTime()){
+              const mensagem = montarMensagemWhatsApp(vencimentos);
               if(configNotificacao.whatsappAtivo) await enviarWhatsAppVencimentos(mensagem);
               if(configNotificacao.telegramAtivo) await enviarTelegramVencimentos(mensagem);
-              localStorage.setItem("wpp_enviado_"+hojeISO+"_"+configNotificacao.horarioNotificacao, "1");
-              console.log("[WhatsApp/Telegram] Enviado no horário");
+              localStorage.setItem(chaveWpp, String(Date.now()));
+              limparMarcadoresEnvioAntigos(dataLocalISO, configNotificacao.horarioNotificacao);
+              console.log("[WhatsApp/Telegram] Enviado 1x hoje (a partir das " + configNotificacao.horarioNotificacao + ")");
             }
           }
         }catch(e){ console.warn("[WhatsApp] erro auto", e); }
@@ -2819,6 +2836,11 @@ function testarNotificacaoAgoraOLD(){
       return String(numero).padStart(2, "0");
     }
 
+    function dataHojeISO(){
+      const agora = new Date();
+      return agora.getFullYear() + "-" + pad2(agora.getMonth() + 1) + "-" + pad2(agora.getDate());
+    }
+
     function adicionarMesesData(dataISO, quantidadeMeses){
       const partes = dataISO.split("-").map(Number);
       const ano = partes[0];
@@ -2848,7 +2870,7 @@ function testarNotificacaoAgoraOLD(){
     }
 
     function limparFormulario(){
-      document.getElementById("data").value = "";
+      document.getElementById("data").value = dataHojeISO();
       document.getElementById("descricao").value = "";
       document.getElementById("valor").value = "";
       document.getElementById("tipo").value = "entrada";
@@ -3451,6 +3473,7 @@ function testarNotificacaoAgoraOLD(){
     });
 
     inicializarFirebase(true);
+    document.getElementById("data").value = dataHojeISO();
     carregarConfigNotificacao();
     atualizarTabela();
     verificarNotificacoes();
@@ -3644,12 +3667,6 @@ function testarNotificacaoAgoraOLD(){
         }
       } else {
         document.getElementById("loginUsuario").focus();
-      }
-    })();
-  </script>
-</body>
-</html>
-);
       }
     })();
   </script>
