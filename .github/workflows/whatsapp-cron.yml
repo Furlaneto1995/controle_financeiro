@@ -272,8 +272,14 @@ jobs:
             }
 
             console.log(`Fim: ${enviados} usuário(s) notificado(s).`);
-          })().catch(erro => {
+            // Fecha a conexão do Firebase Admin para o processo terminar.
+            // Sem isso, o job fica vivo até o timeout mesmo depois de enviar.
+            await admin.app().delete();
+          })().catch(async erro => {
             console.error('Falha fatal:', erro);
+            try{ await admin.app().delete(); }catch(fechar){
+              console.error('Falha ao fechar Firebase Admin:', fechar.message);
+            }
             process.exitCode = 1;
           });
           NODE
