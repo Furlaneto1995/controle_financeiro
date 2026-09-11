@@ -1,20 +1,20 @@
-name: WhatsApp Vencimentos - Backend
+name: Android Push - Vencimentos
 
 on:
   schedule:
-    # Executa a cada 5 minutos. O horário real é calculado no script em
-    # America/Sao_Paulo e o marcador impede duplicidade.
+    # O GitHub pode atrasar alguns minutos. O script calcula o horário em
+    # America/Sao_Paulo e envia assim que o horário configurado for atingido.
     - cron: '*/5 * * * *'
   workflow_dispatch:
     inputs:
       force:
-        description: 'Forçar envio agora (teste manual)'
+        description: 'Forçar uma notificação agora (teste)'
         required: false
         default: 'true'
         type: boolean
 
 jobs:
-  verificar-e-enviar:
+  verificar-e-enviar-push:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
@@ -22,7 +22,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 20
-      - name: Enviar WhatsApp
+      - name: Enviar notificação Android via FCM
         timeout-minutes: 4
         env:
           FIREBASE_DATABASE_URL: "https://controle-financeiro-e4f3b-default-rtdb.firebaseio.com"
@@ -31,10 +31,9 @@ jobs:
           EVENT_NAME: ${{ github.event_name }}
         run: |
           echo "Evento: $EVENT_NAME | Force: $FORCE_SEND"
-          npm install firebase-admin@12 node-fetch@2 --no-audit --no-fund --loglevel=error
+          npm install firebase-admin@12 --no-audit --no-fund --loglevel=error
           node << 'NODE'
           const admin = require('firebase-admin');
-          const fetch = require('node-fetch');
 
           const TIME_ZONE = 'America/Sao_Paulo';
           const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
@@ -43,6 +42,7 @@ jobs:
             databaseURL: process.env.FIREBASE_DATABASE_URL
           });
           const db = admin.database();
+          const messaging = admin.messaging();
 
           function agoraNoBrasil(){
             const f = new Intl.DateTimeFormat('en-GB', {
@@ -63,7 +63,7 @@ jobs:
           }
 
           function numeroData(data){
-            if(!/^\d{4}-\d{2}-\d{2}$/.test(String(data || ''))) return null;
+            if(!/^\\d{4}-\\d{2}-\\d{2}$/.test(String(data || ''))) return null;
             const [a,m,d] = data.split('-').map(Number);
             return Date.UTC(a, m - 1, d);
           }
@@ -72,15 +72,6 @@ jobs:
             const alvo = numeroData(data);
             const atual = numeroData(hoje);
             return alvo === null || atual === null ? 9999 : Math.round((alvo - atual) / 86400000);
-          }
-
-          function dinheiro(valor){
-            return Number(valor || 0).toLocaleString('pt-BR', {style:'currency', currency:'BRL'});
-          }
-
-          function dataBR(data){
-            const p = String(data || '').split('-');
-            return p.length === 3 ? `${p[2]}/${p[1]}/${p[0]}` : data;
           }
 
           function horarioConfigurado(config){
@@ -92,19 +83,71 @@ jobs:
             return {texto:`${String(h).padStart(2,'0')}:${String(min).padStart(2,'0')}`, minutos:h * 60 + min};
           }
 
-          async function enviarWhatsApp(telefone, apikey, mensagem){
-            const url = 'https://api.callmebot.com/whatsapp.php?phone=' +
-              encodeURIComponent(telefone) + '&text=' + encodeURIComponent(mensagem) +
-              '&apikey=' + encodeURIComponent(apikey);
-            try{
-              const resposta = await fetch(url);
-              const corpo = await resposta.text();
-              console.log(`CallMeBot HTTP ${resposta.status}: ${corpo.slice(0,240)}`);
-              return resposta.ok;
-            }catch(erro){
-              console.error('Falha CallMeBot:', erro.message);
-              return false;
+          function dinheiro(valor){
+            return Number(valor || 0).toLocaleString('pt-BR', {style:'currency', currency:'BRL'});
+          }
+
+          function dataBR(data){
+            const p = String(data || '').split('-');
+            return p.length === 3 ? `${p[2]}/${p[1]}/${p[0]}` : data;
+          }
+
+          function tokensDoUsuario(fcmTokens){
+            const grupos = new Set();
+            return Object.entries(fcmTokens || {})
+              .map(([chave, valor]) => ({
+                chave,
+                token: typeof valor === 'string' ? valor : valor && valor.token,
+                criadoEm: typeof valor === 'object' && valor ? valor.criadoEm : '',
+                plataforma: typeof valor === 'object' && valor ? valor.plataforma : '',
+                userAgent: typeof valor === 'object' && valor ? valor.userAgent : ''
+              }))
+              .filter(item => item.token)
+              // Se o botão foi acionado várias vezes no mesmo aparelho, podem
+              // existir tokens antigos para o mesmo navegador. Mantém somente
+              // o mais recente por plataforma e userAgent.
+              .sort((a, b) => String(b.criadoEm || '').localeCompare(String(a.criadoEm || '')))
+              .filter(item => {
+                const plataforma = String(item.plataforma || 'desconhecida').toLowerCase();
+                const navegador = String(item.userAgent || '').slice(0, 200);
+                const grupo = `${plataforma}|${navegador || item.token}`;
+                if(grupos.has(grupo)) return false;
+                grupos.add(grupo);
+                return true;
+              });
+          }
+
+          function montarMensagem(vencimentos, dias, teste){
+            if(teste && vencimentos.length === 0){
+              return {
+                title: 'Controle Financeiro - Teste',
+                body: '✅ Push Android funcionando. O app pode receber notificações fechado.'
+              };
             }
+            const total = vencimentos.reduce((soma, reg) => soma + Number(reg.item.valor || 0), 0);
+            const linhas = vencimentos.slice(0, 4).map(reg => {
+              const quando = reg.diff < 0 ? 'vencida' : reg.diff === 0 ? 'vence hoje' : `vence em ${reg.diff} dia(s)`;
+              return `• ${reg.item.descricao} - ${dinheiro(reg.item.valor)} (${quando})`;
+            });
+            const extra = vencimentos.length > 4 ? `\\n+${vencimentos.length - 4} outra(s)` : '';
+            return {
+              title: 'Controle Financeiro - Vencimentos',
+              body: `${linhas.join('\\n')}${extra}\\nTotal: ${dinheiro(total)}`
+            };
+          }
+
+          async function removerTokensInvalidos(uid, entradas, resposta){
+            const errosInvalidos = new Set([
+              'messaging/registration-token-not-registered',
+              'messaging/invalid-registration-token'
+            ]);
+            const tarefas = [];
+            resposta.responses.forEach((resultado, indice) => {
+              if(!resultado.success && errosInvalidos.has(resultado.error?.code)){
+                tarefas.push(db.ref(`usuarios/${uid}/fcmTokens/${entradas[indice].chave}`).remove());
+              }
+            });
+            await Promise.all(tarefas);
           }
 
           (async()=>{
@@ -122,7 +165,13 @@ jobs:
             for(const [uid, usuario] of Object.entries(usuarios)){
               const cfg = usuario && usuario.configNotificacao;
               const resumo = usuario && usuario.dadosResumo;
-              if(!cfg || cfg.whatsappAtivo !== true || !cfg.whatsappTelefone || !cfg.whatsappApikey){
+              // Este workflow é o canal Android do usuário; não envia para o
+              // token de PC que foi usado apenas nos testes.
+              const entradas = tokensDoUsuario(usuario && usuario.fcmTokens)
+                .filter(item => String(item.plataforma || '').toLowerCase() === 'android');
+
+              if(!cfg || cfg.pushAtivo === false || entradas.length === 0){
+                if(entradas.length === 0) console.log(`${uid}: sem token FCM; ative Push no Android`);
                 continue;
               }
               if(!resumo || !Array.isArray(resumo.pendentes)){
@@ -131,46 +180,78 @@ jobs:
               }
 
               const horario = horarioConfigurado(cfg);
-              // Atraso do GitHub não cancela o envio: depois do horário,
-              // qualquer execução ainda pode enviar uma vez naquele dia.
               if(!forcar && minutosAgora < horario.minutos) continue;
 
-              const chave = `wpp_${agora.data}_${horario.texto}`;
-              const historicoRef = db.ref(`usuarios/${uid}/historicoPush/${chave.replace(':','-')}`);
-              if(!forcar && (await historicoRef.once('value')).exists()){
-                continue;
-              }
+              const chave = forcar
+                ? `fcm_teste_${agora.data}_${String(agora.hora).padStart(2,'0')}-${String(agora.minuto).padStart(2,'0')}`
+                : `fcm_${agora.data}_${horario.texto.replace(':','-')}`;
+              const historicoRef = db.ref(`usuarios/${uid}/historicoPush/${chave}`);
 
               const dias = Math.max(1, Math.min(30, Number(cfg.diasAntecedencia) || 3));
               const vencimentos = resumo.pendentes
                 .map(item => ({item, diff: diffDias(item.data, agora.data)}))
                 .filter(reg => reg.diff <= dias)
                 .sort((a,b) => a.diff - b.diff);
-              if(!vencimentos.length) continue;
 
-              let mensagem = `💰 Controle Financeiro - ${dataBR(agora.data)}\\n\\n`;
-              vencimentos.forEach(reg => {
-                const tipo = reg.diff < 0 ? 'vencida' : reg.diff === 0 ? 'vence hoje' : `vence em ${reg.diff} dia(s)`;
-                mensagem += `• ${reg.item.descricao} - ${dinheiro(reg.item.valor)} - ${dataBR(reg.item.data)} (${tipo})\\n`;
-              });
-              const total = vencimentos.reduce((soma, reg) => soma + Number(reg.item.valor || 0), 0);
-              mensagem += `\\nTotal: ${dinheiro(total)}\\nhttps://furlaneto1995.github.io/controle_financeiro/`;
+              if(!forcar && vencimentos.length === 0) continue;
 
-              const ok = await enviarWhatsApp(
-                String(cfg.whatsappTelefone).replace(/\D/g, ''),
-                String(cfg.whatsappApikey).trim(),
-                mensagem
-              );
-              console.log(`${uid}: ${ok ? 'ENVIADO' : 'FALHA'} | ${vencimentos.length} conta(s)`);
-              if(ok){
-                enviados += 1;
-                if(!forcar){
-                  await historicoRef.set({enviadoEm: new Date().toISOString(), quantidade: vencimentos.length});
+              // Reserva o evento atomicamente antes do envio. Assim, duas
+              // execuções simultâneas do cron não enviam duas vezes.
+              const inicioReserva = new Date().toISOString();
+              const reserva = await historicoRef.transaction(atual => {
+                if(!atual){
+                  return {status: 'enviando', iniciadoEm: inicioReserva};
                 }
+                if(atual.status === 'enviando'){
+                  const inicio = Date.parse(String(atual.iniciadoEm || ''));
+                  const expirou = !Number.isFinite(inicio) || Date.now() - inicio > 10 * 60 * 1000;
+                  if(expirou){
+                    return {status: 'enviando', iniciadoEm: inicioReserva, retomadoEm: new Date().toISOString()};
+                  }
+                }
+                return;
+              });
+              if(!reserva.committed) continue;
+
+              let historicoConfirmado = false;
+              const mensagem = montarMensagem(vencimentos, dias, forcar);
+              const payload = {
+                tokens: entradas.map(item => item.token),
+                data: {
+                  title: mensagem.title,
+                  body: mensagem.body,
+                  url: 'https://furlaneto1995.github.io/controle_financeiro/',
+                  tag: `financeiro-vencimentos-${chave}`
+                }
+              };
+
+              try{
+                const resposta = await messaging.sendEachForMulticast(payload);
+                console.log(`${uid}: FCM ${resposta.successCount} enviado(s), ${resposta.failureCount} falha(s)`);
+                if(resposta.successCount > 0){
+                  enviados += 1;
+                  await historicoRef.set({
+                    tipo: forcar ? 'fcm-teste' : 'fcm',
+                    status: 'enviado',
+                    enviadoEm: new Date().toISOString(),
+                    quantidade: vencimentos.length
+                  });
+                  historicoConfirmado = true;
+                }else{
+                  await historicoRef.remove();
+                }
+                await removerTokensInvalidos(uid, entradas, resposta);
+              }catch(erro){
+                if(!historicoConfirmado){
+                  try{ await historicoRef.remove(); }catch(remocao){
+                    console.error(`${uid}: não foi possível liberar o marcador`, remocao.message);
+                  }
+                }
+                console.error(`${uid}: falha FCM`, erro.message);
               }
             }
 
-            console.log(`Fim: ${enviados} usuário(s) enviado(s).`);
+            console.log(`Fim: ${enviados} usuário(s) notificado(s).`);
           })().catch(erro => {
             console.error('Falha fatal:', erro);
             process.exitCode = 1;
