@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <link rel="manifest" href="./manifest.json?v=12">
+  <link rel="manifest" href="./manifest.json?v=12.7">
   <meta name="theme-color" content="#2b4668">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -1731,7 +1731,7 @@ function testarNotificacaoAgoraOLD(){
 
       // Registra novamente com a versão atual para substituir um Service Worker
       // antigo que esteja quebrado ou preso no cache do PWA.
-      const registration = await navigator.serviceWorker.register('./service-worker.js?v=12.5', { updateViaCache: 'none' });
+      const registration = await navigator.serviceWorker.register('./service-worker.js?v=12.7', { updateViaCache: 'none' });
 
       if(registration.active) return registration;
 
@@ -2434,7 +2434,7 @@ function testarNotificacaoAgoraOLD(){
     if("serviceWorker" in navigator){
       window.addEventListener("load", async () => {
         try{
-          const reg = await navigator.serviceWorker.register("./service-worker.js?v=12.5");
+          const reg = await navigator.serviceWorker.register("./service-worker.js?v=12.7");
           console.log("[PWA] SW registrado", reg.scope);
           
           // Verifica atualizações
@@ -3635,7 +3635,7 @@ function testarNotificacaoAgoraOLD(){
     if("serviceWorker" in navigator){
       window.addEventListener("load", async () => {
         try{
-          const reg = await navigator.serviceWorker.register("./service-worker.js?v=12.5");
+          const reg = await navigator.serviceWorker.register("./service-worker.js?v=12.7");
           console.log("[PWA] SW registrado", reg.scope);
           
           // Verifica atualizações
@@ -3778,5 +3778,5 @@ function testarNotificacaoAgoraOLD(){
       }
     })();
   </script>
-<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a390d3c58c20afcb',t:'MTc4OTA2ODQxNg=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script><script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a396d9995b04f190',t:'MTc4OTEzMTU3MA=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a390d3c58c20afcb',t:'MTc4OTA2ODQxNg=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script><script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a396f5624fd8e1ea',t:'MTc4OTEzMjcwOA=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
