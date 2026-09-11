@@ -217,6 +217,26 @@ jobs:
               const mensagem = montarMensagem(vencimentos, dias, forcar);
               const payload = {
                 tokens: entradas.map(item => item.token),
+                // Payload de notificação garante que o Chrome Android trate
+                // o envio como uma notificação de background.
+                notification: {
+                  title: mensagem.title,
+                  body: mensagem.body
+                },
+                webpush: {
+                  headers: { Urgency: 'high' },
+                  notification: {
+                    title: mensagem.title,
+                    body: mensagem.body,
+                    icon: 'https://furlaneto1995.github.io/controle_financeiro/icon-192.png',
+                    badge: 'https://furlaneto1995.github.io/controle_financeiro/icon-96.png',
+                    tag: `financeiro-vencimentos-${chave}`,
+                    requireInteraction: true
+                  },
+                  fcmOptions: {
+                    link: 'https://furlaneto1995.github.io/controle_financeiro/'
+                  }
+                },
                 data: {
                   title: mensagem.title,
                   body: mensagem.body,
