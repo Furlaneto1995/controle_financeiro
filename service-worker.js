@@ -1,9 +1,9 @@
-/* Controle Financeiro PWA v12.6 - Push Web nativo/FCM */
-const CACHE_NAME = "financeiro-v12.6";
+/* Controle Financeiro PWA v12.7 - Push Web nativo/FCM */
+const CACHE_NAME = "financeiro-v12.7";
 const ICONS = ["./manifest.json", "./icon-96.png", "./icon-192.png", "./icon-512.png"];
 
 self.addEventListener("install", event => {
-  console.log("[SW v12.6] Install");
+  console.log("[SW v12.7] Install");
   event.waitUntil(
     caches.open(CACHE_NAME)
       .then(cache => cache.addAll(ICONS))
@@ -12,7 +12,7 @@ self.addEventListener("install", event => {
 });
 
 self.addEventListener("activate", event => {
-  console.log("[SW v12.6] Activate - limpando caches antigos");
+  console.log("[SW v12.7] Activate - limpando caches antigos");
   event.waitUntil(
     caches.keys()
       .then(keys => Promise.all(
