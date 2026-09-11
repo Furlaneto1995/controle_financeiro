@@ -63,7 +63,7 @@ jobs:
           }
 
           function numeroData(data){
-            if(!/^\\d{4}-\\d{2}-\\d{2}$/.test(String(data || ''))) return null;
+            if(!/^\d{4}-\d{2}-\d{2}$/.test(String(data || ''))) return null;
             const [a,m,d] = data.split('-').map(Number);
             return Date.UTC(a, m - 1, d);
           }
@@ -76,7 +76,7 @@ jobs:
 
           function horarioConfigurado(config){
             const texto = String(config.horarioNotificacao || config.horario || '08:00');
-            const m = /^(\\d{1,2}):(\\d{2})$/.exec(texto);
+            const m = /^(\d{1,2}):(\d{2})$/.exec(texto);
             if(!m) return {texto:'08:00', minutos:480};
             const h = Math.max(0, Math.min(23, Number(m[1])));
             const min = Math.max(0, Math.min(59, Number(m[2])));
@@ -129,10 +129,10 @@ jobs:
               const quando = reg.diff < 0 ? 'vencida' : reg.diff === 0 ? 'vence hoje' : `vence em ${reg.diff} dia(s)`;
               return `• ${reg.item.descricao} - ${dinheiro(reg.item.valor)} (${quando})`;
             });
-            const extra = vencimentos.length > 4 ? `\\n+${vencimentos.length - 4} outra(s)` : '';
+            const extra = vencimentos.length > 4 ? `\n+${vencimentos.length - 4} outra(s)` : '';
             return {
               title: 'Controle Financeiro - Vencimentos',
-              body: `${linhas.join('\\n')}${extra}\\nTotal: ${dinheiro(total)}`
+              body: `${linhas.join('\n')}${extra}\nTotal: ${dinheiro(total)}`
             };
           }
 
