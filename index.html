@@ -335,7 +335,7 @@
     
 
 <script>
-// Força atualização do WebAPK no Android - v12.7
+// Força atualização do WebAPK no Android - v12.8
 (function(){
   if('serviceWorker' in navigator){
     navigator.serviceWorker.ready.then(function(reg){
@@ -347,10 +347,10 @@
     const badge = document.querySelector("#versaoApp") || document.querySelector("div[style*='v9']");
     if(isPWA){
       const currentVersion = localStorage.getItem("app_versao");
-      if(currentVersion && currentVersion !== "v12.7"){
-        console.log("[WebAPK] Versão antiga detectada:", currentVersion, "-> v12.7, limpando");
+      if(currentVersion && currentVersion !== "v12.8"){
+        console.log("[WebAPK] Versão antiga detectada:", currentVersion, "-> v12.8, limpando");
         setTimeout(function(){
-          if(confirm("🔄 Nova versão v12.7 disponível! Seu app está na "+currentVersion+". Atualizar agora?")){
+          if(confirm("🔄 Nova versão v12.8 disponível! Seu app está na "+currentVersion+". Atualizar agora?")){
             caches.keys().then(function(keys){ return Promise.all(keys.map(function(k){return caches.delete(k)})); }).then(function(){
               location.href = "./?v=9.4&forceUpdate="+Date.now();
             });
@@ -367,7 +367,7 @@
   <script>
     // FORÇA ATUALIZAÇÃO DO PWA SE VERSÃO ANTIGA SEM LEMBRAR
     (function(){
-      const VERSAO_ATUAL = "v12.7";
+      const VERSAO_ATUAL = "v12.8";
       const versaoSalva = localStorage.getItem("app_versao");
       const precisaAtualizar = versaoSalva !== VERSAO_ATUAL;
       const temLembrar = !!document.getElementById && true; // será checado após DOM
@@ -412,16 +412,16 @@
     })();
   </script>
   <div id="loginScreen" class="login-screen">
-    <div class="login-card"><div style="position:absolute;top:10px;right:12px;font-size:10px;color:#64748b;background:#f1f5f9;padding:2px 6px;border-radius:6px">v12.7</div>
+    <div class="login-card"><div style="position:absolute;top:10px;right:12px;font-size:10px;color:#64748b;background:#f1f5f9;padding:2px 6px;border-radius:6px">v12.8</div>
       <h2>💰 Controle Financeiro</h2>
       <p>Entre com usuário e senha</p>
       <input type="text" id="loginUsuario" placeholder="Usuário" autocomplete="username">
       <input type="password" id="loginSenha" placeholder="Senha" autocomplete="current-password" onkeydown="if(event.key==='Enter') entrarApp()">
-      <label style="display:flex;align-items:center;gap:8px;margin:10px 0 10px;text-align:left;font-size:14px;color:#0f172a;cursor:pointer;font-weight:700;background:#f0fdf4;border:1px solid #bbf7d0;padding:8px 10px;border-radius:10px"><input type="checkbox" id="lembrarMe" checked style="width:20px;height:20px"> Lembrar de mim (não pedir senha de novo)</label>
+      <label style="display:flex;align-items:center;gap:8px;margin:10px 0 10px;text-align:left;font-size:14px;color:#0f172a;cursor:pointer;font-weight:700;background:#f0fdf4;border:1px solid #bbf7d0;padding:8px 10px;border-radius:10px"><input type="checkbox" id="lembrarMe" checked style="width:20px;height:20px"> Lembrar de mim</label>
       
       <button onclick="entrarApp()">Entrar</button>
-      <button onclick="entrarModoLocal()" style="background:#f8fafc;color:#334155;border:1px solid #e2e8f0;margin-top:4px">📱 Continuar sem senha (só neste aparelho)</button>
-      <small style="color:#16a34a">✔️ Lembrar de mim: só pede senha na primeira vez</small>
+      <button onclick="entrarModoLocal()" style="background:#f8fafc;color:#334155;border:1px solid #e2e8f0;margin-top:4px">📱 Continuar sem senha</button>
+      <small style="color:#16a34a">✔️ Lembrar de mim</small>
     </div>
   </div>
   <div class="container" id="appContainer" style="display:none">
@@ -430,8 +430,7 @@
       <button class="mobile-add-toggle" onclick="toggleFormularioMobile(event)" title="Adicionar lançamento" aria-label="Adicionar lançamento">+</button>
       <button class="menu-toggle" onclick="toggleMenu(event)" title="Menu" aria-label="Abrir menu">☰</button>
             <div id="menuHamburger" class="menu-dropdown">
-        <button onclick="menuConfigNotificacao()">🔔 Config. Notificações</button>
-        <button onclick="menuConfigWhatsapp()">📱 Config. WhatsApp</button>
+        <button onclick="menuConfigNotificacao()">🔔 Notificações</button>
         <div class="menu-separador"></div>
         <button id="btnBackupFirebase" onclick="menuSalvarBackup()">💾 Salvar backup</button>
         <button id="btnBaixarBackupFirebase" onclick="menuBaixarBackup()">⬇️ Baixar backup</button>
@@ -441,7 +440,7 @@
       </div>
     </div>
     <h2>💰 Controle Financeiro</h2>
-    <div class="usuario-app"><span id="indicadorSync" style="font-size:10px;color:#16a34a;opacity:0.4;transition:.3s">☁️</span>
+    <div class="usuario-app">
       <span id="usuarioLogado">Usuário: -</span>
     </div>
     <div class="nav-mes-mobile">
@@ -522,8 +521,7 @@
     <div class="notif-header">
       <span>🔔 Vencimentos</span>
       <div style="display:flex;gap:6px;align-items:center">
-        <button onclick="enviarWhatsAppAgoraVencimentos()" style="font-size:11px;padding:5px 9px;background:#25D366;color:white;border-radius:7px;font-weight:bold">📱 Enviar Zap</button>
-        <button onclick="solicitarPermissaoNotificacao()" style="font-size:11px;padding:5px 9px;background:#3b82f6;color:white;border-radius:7px;font-weight:bold">🔔 Ativar</button>
+        <button id="btnAtivarNotificacaoWeb" onclick="solicitarPermissaoNotificacao()" style="font-size:11px;padding:5px 9px;background:#3b82f6;color:white;border-radius:7px;font-weight:bold">🔔 Ativar</button>
         <button onclick="fecharPainelNotificacoes()" style="background:transparent;border:none;font-size:18px;padding:2px 6px">✕</button>
       </div>
     </div>
@@ -534,38 +532,13 @@
 
   <div id="painelConfigNotificacao" class="painel-notificacoes">
     <div class="notif-header">
-      <span>🔔 Config. Notificações</span>
+      <span>🔔 Notificações</span>
       <button onclick="fecharPainelConfigNotificacao()" style="background:transparent;border:none;font-size:18px;padding:2px 6px">✕</button>
     </div>
     <div class="notif-config" style="flex:1;overflow-y:auto;padding:12px">
-      <label style="display:flex;align-items:center;gap:6px;margin-bottom:10px"><input type="checkbox" id="toggleNotifPush" checked> Notificações do navegador (PC)</label>
-      <label style="display:flex;flex-direction:column;gap:4px;margin-bottom:10px">⏰ Horário diário:<input type="time" id="configHorarioNotif" value="08:00" style="height:36px"></label>
-      <label style="display:flex;flex-direction:column;gap:4px;margin-bottom:10px">Avisar com <span style="display:flex;gap:6px;align-items:center"><input type="number" id="configDiasNotif" min="1" max="30" value="1" style="width:70px;height:32px"> dias de antecedência</span></label>
-      <small id="txtProximoHorario" style="display:block;color:#64748b;font-size:11px;margin-bottom:4px"></small>
-      <small id="txtAgendamentoFechado" style="display:block;color:#16a34a;font-weight:bold;font-size:11px;margin-bottom:12px"></small>
-      <div style="display:flex;gap:6px">
-        <button onclick="salvarConfigNotificacaoUI()" style="background:#16a34a;color:white;padding:10px 14px;border-radius:8px;font-weight:bold;flex:1">💾 Salvar</button>
-        <button onclick="testarNotificacaoAgora()" style="background:#0ea5e9;color:white;padding:10px 14px;border-radius:8px;font-weight:bold;flex:1">🔔 Testar</button>
-        <button id="btnAtivarPushFechado" onclick="ativarPushComStatus()" style="background:#7c3aed;color:white;padding:10px 14px;border-radius:8px;font-weight:bold;flex:1">🚀 Ativar Push Fechado</button>
-      </div>
-      <small style="display:block;margin-top:10px;color:#64748b">Notifica apenas nos dias que tiver conta vencida, hoje ou dentro dos dias configurados.</small>
-    </div>
-  </div>
-
-  <div id="painelConfigWhatsapp" class="painel-notificacoes">
-    <div class="notif-header">
-      <span>📱 Config. WhatsApp</span>
-      <button onclick="fecharPainelConfigWhatsapp()" style="background:transparent;border:none;font-size:18px;padding:2px 6px">✕</button>
-    </div>
-    <div class="notif-config" style="flex:1;overflow-y:auto;padding:12px">
-      <label style="display:flex;align-items:center;gap:6px;margin-bottom:10px"><input type="checkbox" id="toggleWhatsapp"> Ativar WhatsApp</label>
-      <input type="text" id="configWhatsappTel" placeholder="Telefone com DDI ex: 5541999999999" style="height:40px;margin-bottom:8px">
-      <input type="text" id="configWhatsappKey" placeholder="Apikey CallMeBot" style="height:40px;margin-bottom:8px">
-      <div style="display:flex;gap:6px">
-        <button onclick="salvarConfigNotificacaoUI()" style="background:#16a34a;color:white;padding:10px 14px;border-radius:8px;font-weight:bold;flex:1">💾 Salvar</button>
-        <button onclick="testarWhatsApp()" style="background:#25D366;color:white;padding:10px 14px;border-radius:8px;font-weight:bold;flex:1">📱 Testar</button>
-      </div>
-      <small style="display:block;margin-top:8px;color:#64748b;line-height:1.3">Salve +34 623 912 204 e mande "I allow callmebot to send me messages" no WhatsApp</small>
+      <label style="display:flex;align-items:center;gap:6px;margin-bottom:10px"><input type="checkbox" id="toggleNotifPush" checked onchange="salvarConfigNotificacaoUI()"> Notificações</label>
+      <label style="display:flex;flex-direction:column;gap:4px;margin-bottom:10px">⏰ Horário diário:<input type="time" id="configHorarioNotif" value="08:00" onchange="salvarConfigNotificacaoUI()" style="height:36px"></label>
+      <label style="display:flex;flex-direction:column;gap:4px;margin-bottom:10px">Avisar com <span style="display:flex;gap:6px;align-items:center"><input type="number" id="configDiasNotif" min="1" max="30" value="1" onchange="salvarConfigNotificacaoUI()" style="width:70px;height:32px"> dias de antecedência</span></label>
     </div>
   </div>
 
@@ -578,17 +551,15 @@
   <script>
     const NATIVE_ANDROID_SHELL = new URLSearchParams(window.location.search).get("native") === "1";
     const STORAGE_KEY_BASE = "financeiroClaro";
+
+    // O APK já registra o FCM por meio do FirebaseMessagingService nativo.
+    // Este bloqueio também protege contra chamadas acidentais ao fluxo Web FCM
+    // dentro do WebView, evitando segundo token, Service Worker e alerta Web.
+    if(NATIVE_ANDROID_SHELL){
+      window.__nativeAndroidShell = true;
+    }
     let STORAGE_KEY = STORAGE_KEY_BASE;
 
-    if(NATIVE_ANDROID_SHELL){
-      const avisoNative = document.getElementById("txtAgendamentoFechado");
-      const botaoPushWeb = document.getElementById("btnAtivarPushFechado");
-      if(botaoPushWeb) botaoPushWeb.style.display = "none";
-      if(avisoNative){
-        avisoNative.style.display = "block";
-        avisoNative.innerHTML = "✅ Push Android nativo ativo; não é necessário ativar Push Web nesta tela.";
-      }
-    }
 
     const FIREBASE_CONFIG = {
       apiKey: "AIzaSyDkLf1A9MhrAUrf8PL2e0n2J9w1davDgSg",
@@ -656,31 +627,9 @@
       const inputDias = document.getElementById("configDiasNotif");
       const togglePush = document.getElementById("toggleNotifPush");
       const inputHorario = document.getElementById("configHorarioNotif");
-      const inputWppTel = document.getElementById("configWhatsappTel");
-      const inputWppKey = document.getElementById("configWhatsappKey");
-      const toggleWpp = document.getElementById("toggleWhatsapp");
-      const inputTgToken = document.getElementById("configTelegramToken");
-      const inputTgChat = document.getElementById("configTelegramChat");
-      const toggleTg = document.getElementById("toggleTelegram");
-      const statusWpp = document.getElementById("txtStatusWhatsapp");
       if(inputDias) inputDias.value = configNotificacao.diasAntecedencia;
       if(togglePush) togglePush.checked = configNotificacao.pushAtivo;
       if(inputHorario) inputHorario.value = configNotificacao.horarioNotificacao;
-      if(inputWppTel) inputWppTel.value = configNotificacao.whatsappTelefone || "";
-      if(inputWppKey) inputWppKey.value = configNotificacao.whatsappApikey || "";
-      if(toggleWpp) toggleWpp.checked = !!configNotificacao.whatsappAtivo;
-      if(inputTgToken) inputTgToken.value = configNotificacao.telegramToken || "";
-      if(inputTgChat) inputTgChat.value = configNotificacao.telegramChatId || "";
-      if(toggleTg) toggleTg.checked = !!configNotificacao.telegramAtivo;
-      if(statusWpp){
-        if(configNotificacao.whatsappTelefone && configNotificacao.whatsappApikey){
-          statusWpp.innerText = configNotificacao.whatsappAtivo
-            ? "✅ WhatsApp ativo e salvo na sua conta"
-            : "Dados salvos na conta, mas o envio está desativado";
-        }else{
-          statusWpp.innerText = "Salvo na sua conta (nuvem) e neste aparelho. Não se perde ao fechar o app.";
-        }
-      }
     }
     function lerConfigNotificacaoLocalStorage(){
       const chaves = [];
@@ -745,7 +694,7 @@
         if(!firebaseDB && !inicializarFirebase(true)) return false;
         if(!firebaseDB) return false;
         await firebaseDB.ref(FIREBASE_BACKUP_BASE_PATH + "/" + usuarioAtual.uid + "/configNotificacao").update(montarPacoteConfigNotificacao());
-        console.log("[Config] WhatsApp/notificações salvos na nuvem");
+        console.log("[Config] Notificações salvas na nuvem");
         return true;
       }catch(e){
         console.warn("[Config] Falha ao salvar na nuvem", e);
@@ -790,17 +739,10 @@
         return false;
       }
     }
-        function salvarConfigNotificacaoUI(){
-      const painelNotif = document.getElementById("painelConfigNotificacao");
-      const painelWpp = document.getElementById("painelConfigWhatsapp");
-      
-      const inputDias = painelNotif ? painelNotif.querySelector("#configDiasNotif") : document.getElementById("configDiasNotif");
-      const togglePush = painelNotif ? painelNotif.querySelector("#toggleNotifPush") : document.getElementById("toggleNotifPush");
-      const inputHorario = painelNotif ? painelNotif.querySelector("#configHorarioNotif") : document.getElementById("configHorarioNotif");
-      
-      const inputWppTel = painelWpp ? painelWpp.querySelector("#configWhatsappTel") : document.getElementById("configWhatsappTel");
-      const inputWppKey = painelWpp ? painelWpp.querySelector("#configWhatsappKey") : document.getElementById("configWhatsappKey");
-      const toggleWpp = painelWpp ? painelWpp.querySelector("#toggleWhatsapp") : document.getElementById("toggleWhatsapp");
+    function salvarConfigNotificacaoUI(){
+      const inputDias = document.getElementById("configDiasNotif");
+      const togglePush = document.getElementById("toggleNotifPush");
+      const inputHorario = document.getElementById("configHorarioNotif");
 
       if(inputDias && inputDias.value){
         configNotificacao.diasAntecedencia = Math.max(1, Math.min(30, Number(inputDias.value) || 3));
@@ -810,61 +752,17 @@
       }
       if(inputHorario && inputHorario.value){
         configNotificacao.horarioNotificacao = inputHorario.value;
-        console.log("[Config] Novo horário salvo:", inputHorario.value);
       }
-      if(inputWppTel){
-        const soNumeros = inputWppTel.value.replace(/\D/g,"");
-        configNotificacao.whatsappTelefone = soNumeros;
-      }
-      if(inputWppKey){
-        configNotificacao.whatsappApikey = inputWppKey.value.trim();
-      }
-      if(toggleWpp){
-        configNotificacao.whatsappAtivo = !!toggleWpp.checked;
-      }
-      if(configNotificacao.whatsappTelefone && configNotificacao.whatsappApikey && toggleWpp && toggleWpp.checked === false){
-        // mantém telefone/api mesmo se o envio estiver desligado
-      }
+
       salvarConfigNotificacao();
-      sincronizarConfigNotificacaoNuvem().then(ok=>{
-        const statusWpp = document.getElementById("txtStatusWhatsapp");
-        if(statusWpp){
-          statusWpp.innerText = ok
-            ? "✅ Salvo neste aparelho e na nuvem (" + new Date().toLocaleString("pt-BR") + ")"
-            : "✅ Salvo neste aparelho" + (usuarioAtual && !usuarioAtual.modoLocal ? " (nuvem indisponível agora)" : "");
-        }
-      });
+      if(configNotificacao.pushAtivo && !NATIVE_ANDROID_SHELL && usuarioAtual && !usuarioAtual.modoLocal){
+        setTimeout(()=>{ inicializarFCMPush(); }, 0);
+      }
       if(timerProximaNotificacao) clearTimeout(timerProximaNotificacao);
       if(timerAgendamentoNotificacao) clearInterval(timerAgendamentoNotificacao);
       iniciarAgendamentoNotificacao();
       agendarNotificacaoParaAppFechado();
       verificarNotificacoes(false);
-      
-      setTimeout(()=>{
-        const txt1 = document.getElementById("txtProximoHorario");
-        const txt2 = document.getElementById("txtAgendamentoFechado");
-        if(txt1) txt1.innerText = "Próx: "+obterProximoHorarioNotificacaoTexto();
-        if(txt2){
-          const hm = (configNotificacao.horarioNotificacao||"08:00").split(":");
-          const h = Number(hm[0]); const m = Number(hm[1]);
-          const agora = new Date();
-          let prox = new Date(); prox.setHours(h,m,0,0); prox.setSeconds(0);
-          if(prox.getTime() < agora.getTime() - 2*60*1000) prox.setDate(prox.getDate()+1);
-          txt2.innerHTML = "✅ Próxima: <b>"+prox.toLocaleString("pt-BR")+"</b> às "+configNotificacao.horarioNotificacao;
-        }
-      }, 300);
-      
-      fecharPainelConfigNotificacao();
-      fecharPainelConfigWhatsapp();
-      const ind = document.getElementById("indicadorSync");
-      const naNuvem = usuarioAtual && !usuarioAtual.modoLocal;
-      if(ind){ ind.innerText = naNuvem ? "✅ Config salva na nuvem" : "✅ Config salva neste aparelho"; ind.style.opacity="1"; setTimeout(()=>{ ind.style.opacity="0.4"; }, 3000); }
-      console.log("✅ Config salva:", configNotificacao);
-      if(naNuvem){
-        setTimeout(()=>alert("✅ Configuração salva neste aparelho e na sua conta.\n\nTelefone, API e o interruptor do WhatsApp voltam automaticamente no próximo login."), 50);
-      }else{
-        setTimeout(()=>alert("✅ Configuração salva neste aparelho.\n\nNo modo local ela não vai para a nuvem. Entre com usuário e senha para não perder se limpar o cache."), 50);
-      }
     }
 
     function iniciarAgendamentoNotificacao(){
@@ -878,15 +776,6 @@
           const agora = new Date();
           const hojeISO = dataHojeISO();
           const horario = configNotificacao.horarioNotificacao || "08:00";
-          const partes = horario.split(":");
-          const horarioDeHoje = new Date();
-          horarioDeHoje.setHours(Number(partes[0]) || 0, Number(partes[1]) || 0, 0, 0);
-          const chaveWpp = "wpp_enviado_v2_" + hojeISO + "_" + horario;
-          const temCanalMensagens = !!(configNotificacao.whatsappAtivo || configNotificacao.telegramAtivo);
-          const precisaEnviarMensagem = temCanalMensagens
-            && !localStorage.getItem(chaveWpp)
-            && Date.now() >= horarioDeHoje.getTime();
-
           const horaAtual = String(agora.getHours()).padStart(2,"0") + ":" + String(agora.getMinutes()).padStart(2,"0");
           const chavePush = hojeISO + "_" + horario;
           const precisaDispararPush = configNotificacao.pushAtivo
@@ -897,10 +786,6 @@
             // Marca antes da chamada para não repetir enquanto a operação assíncrona termina.
             configNotificacao.ultimoAvisoHorario = chavePush;
             salvarConfigNotificacao();
-            verificarNotificacoes(false);
-          }else if(precisaEnviarMensagem){
-            // Não depende de o navegador executar exatamente no minuto configurado.
-            console.log("[Agendamento] Horário atingido ou retomado; verificando envio", horario);
             verificarNotificacoes(false);
           }
         }catch(e){ console.warn("[Agendamento] erro na checagem", e); }
@@ -913,20 +798,13 @@
     let timerProximaNotificacao = null;
     
     function agendarNotificacaoParaAppFechado(){
+      if(NATIVE_ANDROID_SHELL){
+        console.info("[FCM] Shell Android nativo: agendamento Web ignorado");
+        return;
+      }
       try{
-        const txt = document.getElementById("txtAgendamentoFechado");
-        const aviso = document.getElementById("avisoTrigger");
         const temTrigger = ('showTrigger' in Notification.prototype);
-        
-        if(aviso){
-          if(!temTrigger){
-            aviso.style.display="block";
-            aviso.innerHTML = "⚠️ <b>Modo app fechado não suportado</b> neste navegador. No PC use Chrome/Edge com PWA instalado. Deixe o app aberto para notificar no horário.";
-          } else {
-            aviso.style.display="none";
-          }
-        }
-        
+
         const [h,m] = (configNotificacao.horarioNotificacao||"08:00").split(":").map(Number);
         const agora = new Date();
         let proxima = new Date();
@@ -960,11 +838,6 @@
         const delay = proxima.getTime() - agora.getTime();
         console.log("[Agendamento] Próxima notificação local em", Math.round(delay/1000/60), "min -", proxima.toLocaleString());
         
-        if(txt){
-          const modo = temTrigger ? "mesmo fechado (Trigger)" : "com app aberto";
-          txt.innerHTML = "✅ Próxima: <b>"+proxima.toLocaleString("pt-BR")+"</b> ("+modo+")<br><small>Em "+Math.round(delay/1000/60)+" min</small>";
-        }
-        
         // Agenda execução exata no horário
         timerProximaNotificacao = setTimeout(async ()=>{
           console.log("[Agendamento] Chegou no horário!", new Date().toLocaleString());
@@ -978,306 +851,6 @@
       }
     }
     
-    function agendarTesteEm1Minuto(){
-      const agora = new Date();
-      const daqui1Min = new Date(agora.getTime() + 60*1000);
-      const h = String(daqui1Min.getHours()).padStart(2,"0");
-      const m = String(daqui1Min.getMinutes()).padStart(2,"0");
-      document.getElementById("configHorarioNotif").value = h+":"+m;
-      configNotificacao.horarioNotificacao = h+":"+m;
-      salvarConfigNotificacao();
-      agendarNotificacaoParaAppFechado();
-      alert("⏰ Teste agendado para daqui 1 minuto às "+h+":"+m+"!\n\nDeixe o app aberto/minimizado e aguarde.\nNo PC e celular deve chegar notificação.");
-    }
-
-
-    
-
-    async function enviarTelegramVencimentos(mensagem){
-      if(!configNotificacao.telegramAtivo) return false;
-      const token = configNotificacao.telegramToken;
-      const chatId = configNotificacao.telegramChatId;
-      if(!token || !chatId){ alert("Telegram ativado mas falta token ou chat ID"); return false; }
-      const url = "https://api.telegram.org/bot"+encodeURIComponent(token)+"/sendMessage";
-      try{
-        const resp = await fetch(url, {
-          method: "POST",
-          headers: {"Content-Type":"application/json"},
-          body: JSON.stringify({ chat_id: chatId, text: mensagem, parse_mode: "Markdown" })
-        });
-        const json = await resp.json();
-        console.log("[Telegram] Resposta", json);
-        return json.ok;
-      }catch(e){ console.error("[Telegram] Erro", e); return false; }
-    }
-    async function testarTelegram(){
-      const token = document.getElementById("configTelegramToken")?.value || configNotificacao.telegramToken;
-      const chatId = document.getElementById("configTelegramChat")?.value || configNotificacao.telegramChatId;
-      if(!token || !chatId){ alert("Preencha token e chat ID do Telegram"); return; }
-      configNotificacao.telegramToken = token.trim();
-      configNotificacao.telegramChatId = chatId.trim();
-      configNotificacao.telegramAtivo = true;
-      salvarConfigNotificacao();
-      const msg = "🔔 *Teste Controle Financeiro*\n\nSe recebeu, Telegram está funcionando! ✅";
-      const ok = await enviarTelegramVencimentos(msg);
-      alert(ok ? "✈️ Telegram enviado! Verifique seu Telegram" : "Falha. Verifique token e chat ID. Veja console.");
-    }
-
-    function limparMarcadoresEnvioAntigos(hojeISO, horario){
-      // Remove marcadores de envio de dias/horários antigos para não acumular lixo no localStorage
-      try{
-        const chaveAtual = "wpp_enviado_v2_" + hojeISO + "_" + horario;
-        const remover = [];
-        for(let i = 0; i < localStorage.length; i++){
-          const k = localStorage.key(i);
-          if(k && k.indexOf("wpp_enviado_v2_") === 0 && k !== chaveAtual) remover.push(k);
-        }
-        remover.forEach(k => localStorage.removeItem(k));
-      }catch(e){}
-    }
-
-    async function enviarWhatsAppVencimentos(mensagem){
-      if(!configNotificacao.whatsappAtivo){
-        console.log("[WhatsApp] Desativado");
-        return false;
-      }
-      const tel = (configNotificacao.whatsappTelefone||"").replace(/\D/g,"");
-      const apikey = configNotificacao.whatsappApikey||"";
-      if(!tel || !apikey){
-        console.warn("[WhatsApp] Telefone ou apikey vazio");
-        return false;
-      }
-      const url = "https://api.callmebot.com/whatsapp.php?phone="+encodeURIComponent(tel)+"&text="+encodeURIComponent(mensagem)+"&apikey="+encodeURIComponent(apikey);
-      try{
-        console.log("[WhatsApp] Enviando para", tel, "msg len", mensagem.length);
-        // Método mais confiável para envio automático (sem gesto do usuário): Image + sendBeacon + fetch keepalive
-        try{
-          const img = new Image();
-          img.src = url;
-          console.log("[WhatsApp] Via Image enviado");
-        }catch(e){}
-        try{
-          if(navigator.sendBeacon){
-            const blob = new Blob([], {type: "application/x-www-form-urlencoded"});
-            navigator.sendBeacon(url, blob);
-            console.log("[WhatsApp] Via sendBeacon");
-          }
-        }catch(e){}
-        try{
-          fetch(url, {method:"GET", mode:"no-cors", keepalive: true, cache: "no-store"}).then(()=>console.log("[WhatsApp] Via fetch no-cors keepalive")).catch(()=>{});
-        }catch(e){}
-        // Salva log visível
-        const ind = document.getElementById("indicadorSync");
-        if(ind){ ind.innerText = "📱 Zap enviado "+new Date().toLocaleTimeString().slice(0,5); ind.style.opacity="1"; setTimeout(()=>ind.style.opacity="0.4", 5000); }
-        return true;
-      }catch(e){
-        console.error("[WhatsApp] Erro", e);
-        return false;
-      }
-    }
-
-    function montarMensagemWhatsApp(vencimentos){
-      const agora = new Date().toLocaleString("pt-BR", {timeZone: "America/Sao_Paulo"});
-      let msg = "💰 *Controle Financeiro* - "+agora+"\n\n";
-      if(vencimentos.length===0){
-        msg += "✅ Tudo em dia! Nenhuma conta nos próximos "+configNotificacao.diasAntecedencia+" dias.\n";
-      } else {
-        const vencidas = vencimentos.filter(v=>v.tipo==="vencida");
-        const hoje = vencimentos.filter(v=>v.tipo==="hoje");
-        const proximas = vencimentos.filter(v=>v.tipo==="proxima");
-        if(vencidas.length>0){
-          msg += "🚨 *VENCIDA"+(vencidas.length>1?"S":"")+" ("+vencidas.length+"):*\n";
-          vencidas.forEach(v=>{ 
-            const diasAtras = Math.abs(v.diff);
-            msg += "• "+v.item.descricao+" - "+formatarMoeda(v.item.valor)+" - Venceu em "+formatarDataBR(v.item.data)+" (há "+diasAtras+" dia"+(diasAtras>1?"s":"")+")\n"; 
-          });
-          msg += "\n";
-        }
-        if(hoje.length>0){
-          msg += "⚠️ *VENCE HOJE ("+hoje.length+"):*\n";
-          hoje.forEach(v=>{ msg += "• "+v.item.descricao+" - "+formatarMoeda(v.item.valor)+"\n"; });
-          msg += "\n";
-        }
-        if(proximas.length>0){
-          msg += "⏰ *A VENCER em até "+configNotificacao.diasAntecedencia+" dia"+(configNotificacao.diasAntecedencia>1?"s":"")+" ("+proximas.length+"):*\n";
-          proximas.forEach(v=>{ msg += "• "+v.item.descricao+" - "+formatarMoeda(v.item.valor)+" - "+formatarDataBR(v.item.data)+"\n"; });
-          msg += "\n";
-        }
-        const total = vencimentos.reduce((s,v)=>s+Number(v.item.valor||0),0);
-        msg += "💵 *Total:* "+formatarMoeda(total)+"\n";
-      }
-      msg += "\n👉 https://furlaneto1995.github.io/controle_financeiro/";
-      return msg;
-    }
-
-
-
-    async function enviarWhatsAppAgoraVencimentos(){
-      const vencs = obterVencimentosProximos();
-      if(vencs.length===0){
-        alert("Nenhuma conta nos próximos "+configNotificacao.diasAntecedencia+" dias para enviar");
-        return;
-      }
-      const msg = montarMensagemWhatsApp(vencs);
-      const ok = await enviarWhatsAppVencimentos(msg);
-      alert(ok ? "📱 WhatsApp com "+vencs.length+" conta(s) enviado! Verifique WhatsApp" : "Falha");
-    }
-
-    async function testarWhatsApp(){
-      const tel = document.getElementById("configWhatsappTel")?.value || configNotificacao.whatsappTelefone;
-      const key = document.getElementById("configWhatsappKey")?.value || configNotificacao.whatsappApikey;
-      if(!tel || !key){
-        alert("Preencha telefone (com DDI ex: 5541999999999) e apikey do CallMeBot");
-        return;
-      }
-      // Salva temporariamente
-      configNotificacao.whatsappTelefone = tel.replace(/\D/g,"");
-      configNotificacao.whatsappApikey = key.trim();
-      configNotificacao.whatsappAtivo = true;
-      const checkWpp = document.getElementById("toggleWhatsapp");
-      if(checkWpp) checkWpp.checked = true;
-      salvarConfigNotificacao();
-      await sincronizarConfigNotificacaoNuvem();
-      const msg = "🔔 *Teste Controle Financeiro*\n\nSe você recebeu esta mensagem, o WhatsApp está funcionando! ✅\n\nAgora você receberá todo dia às "+configNotificacao.horarioNotificacao+" as contas a vencer.";
-      const ok = await enviarWhatsAppVencimentos(msg);
-      if(ok){
-        alert("📱 Mensagem de teste enviada para "+tel+"!\nVerifique seu WhatsApp em até 30s.\nSe não chegar, verifique se mandou 'I allow callmebot to send me messages' para +34 623 912 204 e se apikey está correto.");
-      } else {
-        alert("Falha ao enviar WhatsApp. Verifique telefone e apikey.");
-      }
-    }
-
-    async function testarNotificacaoAgora(){
-      console.log("[Teste] Permissão:", Notification.permission, "SW:", !!navigator.serviceWorker.controller, "UA:", navigator.userAgent.slice(0,80));
-      if(!("Notification" in window)){
-        alert("❌ Seu navegador não suporta notificações\nUse Chrome ou Edge no Android, não use Firefox/Samsung Internet");
-        return;
-      }
-      const isAndroid = /Android/i.test(navigator.userAgent);
-      
-      const enviarViaSW = async (titulo, corpo)=>{
-        try{
-          if('serviceWorker' in navigator){
-            const reg = await navigator.serviceWorker.ready;
-            await reg.showNotification(titulo, {
-              body: corpo,
-              icon: "./icon-192.png",
-              badge: "./icon-96.png",
-              tag: "teste-agora-v12.7",
-              vibrate: [200, 100, 200],
-              requireInteraction: false,
-              data: { url: "./" }
-            });
-            console.log("[Teste] Via SW showNotification enviado");
-            return true;
-          }
-        }catch(e){ console.error("[Teste] SW falhou", e); }
-        return false;
-      };
-      
-      const enviarDireto = (titulo, corpo)=>{
-        try{
-          const n = new Notification(titulo, {
-            body: corpo,
-            icon: "./icon-192.png",
-            badge: "./icon-96.png",
-            tag: "teste-agora-direto",
-            requireInteraction: false
-          });
-          n.onclick = ()=>{ window.focus(); n.close(); };
-          console.log("[Teste] Direto enviado");
-          return true;
-        }catch(e){ console.error("[Teste] Direto falhou", e); return false; }
-      };
-
-      const executarTeste = async ()=>{
-        const titulo = "🔔 Teste v12.7" + (isAndroid ? " - Android" : " - PC");
-        const corpo = isAndroid ? "Se aparecer na barra superior, está funcionando! Deslize de cima para baixo para ver." : "Se você está vendo este pop-up no canto inferior direito, as notificações estão funcionando!";
-        
-        let ok = false;
-        if(isAndroid){
-          // No Android, SEMPRE usa Service Worker - new Notification() muitas vezes não mostra
-          console.log("[Teste] Android detectado, usando SW");
-          ok = await enviarViaSW(titulo, corpo);
-          if(!ok) ok = enviarDireto(titulo, corpo);
-        } else {
-          ok = enviarDireto(titulo, corpo);
-          if(!ok) ok = await enviarViaSW(titulo, corpo);
-        }
-        return ok;
-      };
-
-      if(Notification.permission === "default"){
-        const perm = await Notification.requestPermission();
-        console.log("[Teste] Permissão nova:", perm);
-        if(perm==="granted"){
-          const ok = await executarTeste();
-          alert(ok ? "✅ Permissão concedida e teste enviado!\n\nAndroid: deslize de cima para baixo na tela\nPC: olhe canto inferior direito" : "❌ Falha ao enviar mesmo com permissão");
-        } else {
-          alert("❌ Permissão negada: "+perm+"\n\nAndroid: Vá em Chrome > ⋮ > Configurações > Notificações > Ativar\nDepois: Configurações do site > Seu site > Notificações > Permitir\nSistema: Android > Config > Apps > Chrome > Notificações > Permitir");
-        }
-      } else if(Notification.permission === "denied"){
-        alert("❌ BLOQUEADO!\n\n1) Android > Configurações > Apps > Chrome > Notificações > PERMITIR\n2) Se instalou o PWA, também: Apps > Financeiro > Notificações > Permitir\n3) Chrome > ⋮ > Configurações > Notificações > Permitir\n4) Chrome > ⋮ > Configurações > Config. do site > Todos > github.io > Notificações > Permitir\n\nDepois recarregue e clique em Ativar de novo");
-      } else {
-        // granted
-        const ok = await executarTeste();
-        if(ok){
-          alert("✅ Teste enviado!\n\nSe não apareceu:\n- Android: deslize o dedo de cima para baixo (barra de notificações)\n- Verifique se 'Não Perturbe' está DESLIGADO\n- Android > Config > Apps > Financeiro > Notificações > Permitir\n- Tente com o app minimizado (botão home), não fechado");
-        } else {
-          alert("❌ Falha. Tente: Chrome > Configurações > Armazenamento > Seu site > Limpar e redefinir > recarregue");
-        }
-      }
-    }
-function testarNotificacaoAgoraOLD(){
-      console.log("[Teste] Permissão:", Notification.permission, "SW controller:", !!navigator.serviceWorker.controller);
-      if(!("Notification" in window)){
-        alert("❌ Seu navegador não suporta notificações\nUse Chrome ou Edge");
-        return;
-      }
-      const enviarTesteDireto = (titulo, corpo)=>{
-        try{
-          // Teste DIRETO sem passar pelo Service Worker - funciona na hora
-          const n = new Notification(titulo, {
-            body: corpo,
-            icon: "./icon-192.png",
-            badge: "./icon-96.png",
-            tag: "teste-agora",
-            requireInteraction: false
-          });
-          n.onclick = ()=>{ window.focus(); n.close(); };
-          console.log("[Teste] Notification direta enviada");
-          return true;
-        }catch(e){
-          console.error("[Teste] Erro notification direta", e);
-          // Fallback via SW
-          try{ enviarNotificacaoBrowser(titulo, corpo); return true; }catch(e2){ return false; }
-        }
-      };
-
-      if(Notification.permission === "default"){
-        Notification.requestPermission().then(p=>{
-          console.log("[Teste] Nova permissão:", p);
-          if(p==="granted"){
-            enviarTesteDireto("✅ Teste OK - Permissão concedida", "Notificações funcionando! No PC veja canto inferior direito. No celular veja topo da tela.");
-            alert("✅ Permissão concedida! Teste enviado.\n\nPC: olhe canto inferior direito do Windows\nCelular: olhe barra de notificações no topo");
-          } else {
-            alert("❌ Permissão negada: "+p+"\n\nVá em Chrome > Configurações > Notificações > Permitir seu site");
-          }
-        });
-      } else if(Notification.permission === "denied"){
-        alert("❌ Notificações BLOQUEADAS!\n\nPC: Chrome > ⋮ > Configurações > Privacidade > Configurações do site > Notificações > Seu github.io > Permitir\n\nCelular: Chrome > ⋮ > Configurações > Notificações > Permitir + Configurações do site > Seu site > Notificações > Permitir\n\nOu: Android > Configurações > Apps > Chrome > Notificações > Permitir");
-      } else {
-        // granted - manda teste na hora
-        const vencs = obterVencimentosProximos();
-        const ok = enviarTesteDireto("🔔 Teste - v12.7", vencs.length>0 ? "Funcionando! Você tem "+vencs.length+" conta(s) a vencer hoje" : "Se você está vendo este pop-up, as notificações estão funcionando! (teste sem contas)");
-        if(ok){
-          alert("✅ Teste enviado direto!\n\nSe não apareceu:\n- PC: Win+N para abrir central de notificações\n- Celular: deslize de cima para baixo\n- Verifique se Chrome tem permissão nas configurações do Android");
-        } else {
-          alert("❌ Falha ao enviar. Tente recarregar a página e permitir de novo.");
-        }
-      }
-    }
-
     function obterProximoHorarioNotificacaoTexto(){
       const agora = new Date();
       const [h,m] = (configNotificacao.horarioNotificacao||"08:00").split(":").map(Number);
@@ -1331,6 +904,10 @@ function testarNotificacaoAgoraOLD(){
       return result;
     }
     function solicitarPermissaoNotificacao(){
+      if(NATIVE_ANDROID_SHELL){
+        console.info("[FCM] Shell Android nativo: permissão Web ignorada");
+        return;
+      }
       if(!("Notification" in window)){
         alert("Seu navegador não suporta notificações.");
         return;
@@ -1353,6 +930,7 @@ function testarNotificacaoAgoraOLD(){
       });
     }
     function enviarNotificacaoBrowser(titulo, corpo){
+      if(NATIVE_ANDROID_SHELL) return;
       if(!configNotificacao.pushAtivo) return;
       if(!("Notification" in window)) return;
       if(Notification.permission !== "granted") return;
@@ -1387,47 +965,6 @@ function testarNotificacaoAgoraOLD(){
       if(isAtivo) fecharPainelNotificacoes();
       else abrirPainelNotificacoes();
     }
-    let envioMensagensEmAndamento = false;
-    async function verificarEnviosMensagens(vencimentos){
-      if(envioMensagensEmAndamento) return;
-      if(!vencimentos || vencimentos.length === 0) return;
-      if(!(configNotificacao.whatsappAtivo || configNotificacao.telegramAtivo)) return;
-
-      const dataLocalISO = dataHojeISO();
-      const horario = configNotificacao.horarioNotificacao || "08:00";
-      const chaveWpp = "wpp_enviado_v2_" + dataLocalISO + "_" + horario;
-      if(localStorage.getItem(chaveWpp)) return;
-
-      const partesHorario = horario.split(":");
-      const horarioDeHoje = new Date();
-      horarioDeHoje.setHours(Number(partesHorario[0]) || 0, Number(partesHorario[1]) || 0, 0, 0);
-      if(Date.now() < horarioDeHoje.getTime()) return;
-
-      envioMensagensEmAndamento = true;
-      try{
-        const mensagem = montarMensagemWhatsApp(vencimentos);
-        let algumCanalEnviado = false;
-        if(configNotificacao.whatsappAtivo){
-          algumCanalEnviado = (await enviarWhatsAppVencimentos(mensagem)) || algumCanalEnviado;
-        }
-        if(configNotificacao.telegramAtivo){
-          algumCanalEnviado = (await enviarTelegramVencimentos(mensagem)) || algumCanalEnviado;
-        }
-
-        if(algumCanalEnviado){
-          localStorage.setItem(chaveWpp, String(Date.now()));
-          limparMarcadoresEnvioAntigos(dataLocalISO, horario);
-          console.log("[WhatsApp/Telegram] Enviado 1x hoje (a partir das " + horario + ")");
-        }else{
-          console.warn("[WhatsApp/Telegram] Nenhum canal confirmou o envio; será tentado novamente.");
-        }
-      }catch(e){
-        console.warn("[WhatsApp/Telegram] erro no envio automático", e);
-      }finally{
-        envioMensagensEmAndamento = false;
-      }
-    }
-
     let notificacaoVisualEmAndamento = false;
 
     async function verificarNotificacoes(forcarPush = false){
@@ -1505,10 +1042,8 @@ function testarNotificacaoAgoraOLD(){
           }
         }
 
-        await verificarEnviosMensagens(vencimentos);
-
         // Notificação apenas nos dias de antecedência programados (NÃO todos os dias)
-        if(configNotificacao.pushAtivo && "Notification" in window && Notification.permission==="granted"){
+        if(!NATIVE_ANDROID_SHELL && configNotificacao.pushAtivo && "Notification" in window && Notification.permission==="granted"){
           const jaNotificouHoje = configNotificacao.ultimoAvisoData === hojeISO;
           // Impede várias chamadas simultâneas de criarem uma fila de alertas.
           if((forcarPush || !jaNotificouHoje) && !notificacaoVisualEmAndamento){
@@ -1659,13 +1194,6 @@ function testarNotificacaoAgoraOLD(){
               console.log("[AutoSync] Backup salvo automaticamente na nuvem -", dados.length, "registros");
               // Sincroniza resumo para servidor Push fechado
               sincronizarDadosParaPushServidor();
-              // Mostra indicador discreto
-              const indicador = document.getElementById("indicadorSync");
-              if(indicador){
-                indicador.innerText = "☁️ Salvo " + new Date().toLocaleTimeString("pt-BR").slice(0,5);
-                indicador.style.opacity = "1";
-                setTimeout(()=>{ indicador.style.opacity="0.4"; }, 3000);
-              }
             }catch(e){
               console.warn("[AutoSync] Falha ao salvar automático", e.message);
             }
@@ -1790,6 +1318,11 @@ function testarNotificacaoAgoraOLD(){
     }
 
     async function inicializarFCMPush(){
+      if(NATIVE_ANDROID_SHELL){
+        console.info("[FCM] Shell Android nativo: Web FCM não será registrado");
+        return null;
+      }
+      if(fcmTokenAtual) return fcmTokenAtual;
       try{
         if(!firebaseDB || !usuarioAtual){
           console.log("[FCM] Sem usuário logado para FCM");
@@ -1904,31 +1437,6 @@ function testarNotificacaoAgoraOLD(){
         }
       }
       return null;
-    }
-
-    async function ativarPushComStatus(){
-      const botao = document.getElementById('btnAtivarPushFechado');
-      const textoOriginal = botao ? botao.innerText : '🚀 Ativar Push Fechado';
-      if(botao){
-        botao.disabled = true;
-        botao.innerText = '⏳ Registrando Push...';
-      }
-      try{
-        const token = await inicializarFCMPush();
-        if(token){
-          alert('✅ Push Android ativado!\n\nToken salvo no Firebase. O servidor já poderá enviar notificações com o app fechado.');
-        }else{
-          alert('❌ Não foi possível obter o token Push. Veja o erro exibido e tente novamente.');
-        }
-      }catch(e){
-        console.error('[FCM] Erro no botão', e);
-        alert('❌ Erro ao ativar Push:\n\n' + (e.message || e));
-      }finally{
-        if(botao){
-          botao.disabled = false;
-          botao.innerText = textoOriginal;
-        }
-      }
     }
 
     async function sincronizarDadosParaPushServidor(){
@@ -2165,11 +1673,10 @@ function testarNotificacaoAgoraOLD(){
       limparFiltros();
       document.getElementById("loginScreen").style.display = "none";
       document.getElementById("appContainer").style.display = "flex";
-      document.getElementById("usuarioLogado").innerText = "📱 Modo local - " + STORAGE_KEY_BASE;
+      document.getElementById("usuarioLogado").innerText = "";
       carregarConfigNotificacao();
       iniciarAgendamentoNotificacao();
       atualizarTabela();
-      alert("Modo local ativado! 📱\n\nSeus dados ficam só neste aparelho. Para fazer backup na nuvem depois, vá no menu ☰ > 🔑 Alterar senha / Criar backup, crie um usuário com senha e use Salvar backup.");
     }
 
     async function tentarLoginAutomatico(){
@@ -2182,12 +1689,6 @@ function testarNotificacaoAgoraOLD(){
       if(inputUsuario) inputUsuario.value = sessao.usuario;
       if(inputSenha) inputSenha.value = sessao.senha;
       if(checkLembrar) checkLembrar.checked = true;
-      // Mostra feedback
-      const loginCard = document.querySelector(".login-card");
-      if(loginCard){
-        const p = loginCard.querySelector("p");
-        if(p) p.innerText = "🔄 Entrando automaticamente como " + sessao.usuario + "...";
-      }
       try{
         // pequena espera para Firebase inicializar
         await new Promise(r=>setTimeout(r, 400));
@@ -2292,36 +1793,19 @@ function testarNotificacaoAgoraOLD(){
                 }
                 if(backupAuto && Array.isArray(backupAuto.dados) && backupAuto.dados.length>0){
                   const backupNormalizado = normalizarDadosBackup(backupAuto.dados);
-                  const dataBackupInfo = pacoteAuto.atualizadoEmBR || backupAuto.atualizadoEmBR || "recentemente";
                   // Se local está vazio, restaura direto
                   if(dados.length===0){
                     dados = backupNormalizado;
                     salvar();
                     console.log("[AutoBackup] Backup restaurado automaticamente ao logar -", dados.length, "registros");
-                    setTimeout(()=>alert("✅ Backup baixado automaticamente!\n\n"+backupNormalizado.length+" registros restaurados de "+dataBackupInfo), 800);
                   } else {
-                    // Se local já tem dados, verifica se backup é diferente/novo e oferece restauração automática
-                    // Se backup tem mais registros ou é de usuário novo, restaura automaticamente para garantir que ao logar já baixa o que está no backup
                     const totalLocal = dados.length;
                     const totalBackup = backupNormalizado.length;
-                    // Se backup tem dados e local tem, mas backup é maior ou usuário pediu para sempre baixar ao logar, então mescla ou substitui?
-                    // IMPLEMENTAÇÃO PEDIDA: ao logar, já baixa o que estiver em backup (sobrescreve local com backup)
-                    // Só não sobrescreve se local foi modificado recentemente (últimos 5 min) para evitar perda
                     const deveSobrescrever = totalBackup>0 && (totalBackup!==totalLocal || isAuto);
                     if(deveSobrescrever){
-                      // Para não perder dados, faz merge inteligente: mantém IDs únicos
-                      // Se quiser substituir total, descomente a linha abaixo:
-                      // dados = backupNormalizado;
-                      // Por segurança, vamos substituir apenas se local está vazio OU se usuário confirmou auto-restauração sempre
-                      // Como usuário pediu "ao logar já baixe", vamos baixar sempre que logar e o backup for diferente
-                      if(confirm("Backup encontrado na nuvem!\n\nLocal: "+totalLocal+" registros\nNuvem ("+dataBackupInfo+"): "+totalBackup+" registros\n\nDeseja baixar o backup agora? (Isso vai substituir os dados locais pelo backup da nuvem)")){
-                        dados = backupNormalizado;
-                        salvar();
-                        console.log("[AutoBackup] Usuário confirmou restauração automática");
-                      } else {
-                        // Se não quer substituir, mantém local mas informa
-                        console.log("[AutoBackup] Usuário recusou substituição, mantém local");
-                      }
+                      // Restaura o backup automaticamente, sem interromper a entrada no app.
+                      dados = backupNormalizado;
+                      salvar();
                     }
                   }
                 }
@@ -2371,14 +1855,10 @@ function testarNotificacaoAgoraOLD(){
         await restaurarConfigNotificacaoDaNuvem();
         iniciarAgendamentoNotificacao();
         atualizarTabela();
-        // O APK nativo já possui FirebaseMessagingService próprio.
-        // Evita registrar um segundo token Web Push dentro do WebView.
-        if(!NATIVE_ANDROID_SHELL){
+        // O APK nativo usa FirebaseMessagingService próprio. No navegador,
+        // ativa o Web Push automaticamente somente se Notificações estiver marcado.
+        if(!NATIVE_ANDROID_SHELL && configNotificacao.pushAtivo){
           setTimeout(()=>{ inicializarFCMPush(); }, 1500);
-        }
-        // Pede permissão de notificação automaticamente apenas no navegador/PWA.
-        if(!NATIVE_ANDROID_SHELL && configNotificacao.pushAtivo && "Notification" in window && Notification.permission === "default"){
-          setTimeout(()=>{ solicitarPermissaoNotificacao(); }, 1500);
         }
         setTimeout(()=>{ verificarNotificacoes(false); }, 800);
         if(usuarioCriadoAgora){
@@ -2668,23 +2148,15 @@ function testarNotificacaoAgoraOLD(){
     function menuBaixarBackup(){ fecharMenu(); baixarBackupFirebase(); }
     function menuAlterarSenha(){ fecharMenu(); trocarSenhaApp(); }
     function menuConfigNotificacao(){ fecharMenu(); document.getElementById("painelConfigNotificacao")?.classList.add("ativo"); carregarConfigNotificacao(); }
-    function menuConfigWhatsapp(){ fecharMenu(); document.getElementById("painelConfigWhatsapp")?.classList.add("ativo"); carregarConfigNotificacao(); }
     function abrirPainelConfigNotificacao(){
-      fecharPainelNotificacoes(); fecharPainelConfigWhatsapp();
+      fecharPainelNotificacoes();
       document.getElementById("painelConfigNotificacao")?.classList.add("ativo");
       carregarConfigNotificacao();
     }
     function fecharPainelConfigNotificacao(){ document.getElementById("painelConfigNotificacao")?.classList.remove("ativo"); }
-    function abrirPainelConfigWhatsapp(){
-      fecharPainelNotificacoes(); fecharPainelConfigNotificacao();
-      document.getElementById("painelConfigWhatsapp")?.classList.add("ativo");
-      carregarConfigNotificacao();
-    }
-    function fecharPainelConfigWhatsapp(){ document.getElementById("painelConfigWhatsapp")?.classList.remove("ativo"); }
-
     // Fechar todos paineis ao clicar fora
     const fecharTodosPaineis = ()=>{
-      fecharPainelNotificacoes(); fecharPainelConfigNotificacao(); fecharPainelConfigWhatsapp();
+      fecharPainelNotificacoes(); fecharPainelConfigNotificacao();
     };
 
     function menuSair(){ 
@@ -3642,12 +3114,6 @@ function testarNotificacaoAgoraOLD(){
     iniciarAgendamentoNotificacao();
     // Verifica vencimentos a cada 1 hora enquanto app aberto (fallback)
     setInterval(()=>{ if(document.getElementById("appContainer").style.display !== "none") verificarNotificacoes(); }, 3600000);
-    // Atualiza texto de próximo horário no painel
-    setInterval(()=>{
-      const txt = document.getElementById("txtProximoHorario");
-      if(txt) txt.innerText = "próx: "+obterProximoHorarioNotificacaoTexto();
-    }, 30000);
-
     // ===== PWA - Instalação e Service Worker =====
     let deferredPrompt = null;
     const btnInstalar = document.getElementById("btnInstalarPWA");
@@ -3781,7 +3247,7 @@ function testarNotificacaoAgoraOLD(){
             if(!temCheckbox){
               document.body.innerHTML = '<div style="padding:30px;text-align:center;font-family:sans-serif"><h2>🔄 Atualizando para v9...</h2><p>Detectamos app antigo.</p><p>Limpando cache...</p></div>';
               caches.keys().then(ks=>Promise.all(ks.map(k=>caches.delete(k)))).then(()=>{
-                localStorage.setItem("app_versao","v12.7");
+                localStorage.setItem("app_versao","v12.8");
                 setTimeout(()=>location.href="./controle-financeiro.html?updated=v9&ts="+Date.now(), 1500);
               });
             }
@@ -3832,5 +3298,5 @@ function testarNotificacaoAgoraOLD(){
       }
     })();
   </script>
-<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a390d3c58c20afcb',t:'MTc4OTA2ODQxNg=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a390d3c58c20afcb',t:'MTc4OTA2ODQxNg=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script><script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a4031c195d69acbf',t:'MTc5MDI2Njc1Ng=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
