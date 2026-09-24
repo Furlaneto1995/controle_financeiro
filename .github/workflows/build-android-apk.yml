@@ -5,7 +5,7 @@ on:
   push:
     paths:
       - 'android-native/**'
-      - 'build-android-apk.yml'
+      - '.github/workflows/build-android-apk.yml'
 
 jobs:
   build:
