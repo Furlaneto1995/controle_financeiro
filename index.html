@@ -576,8 +576,19 @@
   <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-database-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-messaging-compat.js"></script>
   <script>
+    const NATIVE_ANDROID_SHELL = new URLSearchParams(window.location.search).get("native") === "1";
     const STORAGE_KEY_BASE = "financeiroClaro";
     let STORAGE_KEY = STORAGE_KEY_BASE;
+
+    if(NATIVE_ANDROID_SHELL){
+      const avisoNative = document.getElementById("txtAgendamentoFechado");
+      const botaoPushWeb = document.getElementById("btnAtivarPushFechado");
+      if(botaoPushWeb) botaoPushWeb.style.display = "none";
+      if(avisoNative){
+        avisoNative.style.display = "block";
+        avisoNative.innerHTML = "✅ Push Android nativo ativo; não é necessário ativar Push Web nesta tela.";
+      }
+    }
 
     const FIREBASE_CONFIG = {
       apiKey: "AIzaSyDkLf1A9MhrAUrf8PL2e0n2J9w1davDgSg",
@@ -2360,10 +2371,13 @@ function testarNotificacaoAgoraOLD(){
         await restaurarConfigNotificacaoDaNuvem();
         iniciarAgendamentoNotificacao();
         atualizarTabela();
-        // Inicializa FCM Push para funcionar fechado (Opção 2)
-        setTimeout(()=>{ inicializarFCMPush(); }, 1500);
-        // Pede permissão de notificação automaticamente se configurado
-        if(configNotificacao.pushAtivo && "Notification" in window && Notification.permission === "default"){
+        // O APK nativo já possui FirebaseMessagingService próprio.
+        // Evita registrar um segundo token Web Push dentro do WebView.
+        if(!NATIVE_ANDROID_SHELL){
+          setTimeout(()=>{ inicializarFCMPush(); }, 1500);
+        }
+        // Pede permissão de notificação automaticamente apenas no navegador/PWA.
+        if(!NATIVE_ANDROID_SHELL && configNotificacao.pushAtivo && "Notification" in window && Notification.permission === "default"){
           setTimeout(()=>{ solicitarPermissaoNotificacao(); }, 1500);
         }
         setTimeout(()=>{ verificarNotificacoes(false); }, 800);
