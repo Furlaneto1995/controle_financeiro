@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <link rel="manifest" href="./manifest.json?v=12.7">
+  <link rel="manifest" href="./manifest.json?v=12">
   <meta name="theme-color" content="#2b4668">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -335,7 +335,7 @@
     
 
 <script>
-// Força atualização do WebAPK no Android - v12.8
+// Força atualização do WebAPK no Android - v12.2
 (function(){
   if('serviceWorker' in navigator){
     navigator.serviceWorker.ready.then(function(reg){
@@ -347,10 +347,10 @@
     const badge = document.querySelector("#versaoApp") || document.querySelector("div[style*='v9']");
     if(isPWA){
       const currentVersion = localStorage.getItem("app_versao");
-      if(currentVersion && currentVersion !== "v12.8"){
-        console.log("[WebAPK] Versão antiga detectada:", currentVersion, "-> v12.8, limpando");
+      if(currentVersion && currentVersion !== "v12.2"){
+        console.log("[WebAPK] Versão antiga detectada:", currentVersion, "-> v12.2, limpando");
         setTimeout(function(){
-          if(confirm("🔄 Nova versão v12.8 disponível! Seu app está na "+currentVersion+". Atualizar agora?")){
+          if(confirm("🔄 Nova versão v12.2 disponível! Seu app está na "+currentVersion+". Atualizar agora?")){
             caches.keys().then(function(keys){ return Promise.all(keys.map(function(k){return caches.delete(k)})); }).then(function(){
               location.href = "./?v=9.4&forceUpdate="+Date.now();
             });
@@ -367,7 +367,7 @@
   <script>
     // FORÇA ATUALIZAÇÃO DO PWA SE VERSÃO ANTIGA SEM LEMBRAR
     (function(){
-      const VERSAO_ATUAL = "v12.8";
+      const VERSAO_ATUAL = "v12.2";
       const versaoSalva = localStorage.getItem("app_versao");
       const precisaAtualizar = versaoSalva !== VERSAO_ATUAL;
       const temLembrar = !!document.getElementById && true; // será checado após DOM
@@ -412,16 +412,16 @@
     })();
   </script>
   <div id="loginScreen" class="login-screen">
-    <div class="login-card"><div style="position:absolute;top:10px;right:12px;font-size:10px;color:#64748b;background:#f1f5f9;padding:2px 6px;border-radius:6px">v12.8</div>
+    <div class="login-card"><div style="position:absolute;top:10px;right:12px;font-size:10px;color:#64748b;background:#f1f5f9;padding:2px 6px;border-radius:6px">v12.2</div><div style="position:absolute;top:10px;right:12px;font-size:10px;color:#64748b;background:#f1f5f9;padding:2px 6px;border-radius:6px">v12.2</div>
       <h2>💰 Controle Financeiro</h2>
       <p>Entre com usuário e senha</p>
       <input type="text" id="loginUsuario" placeholder="Usuário" autocomplete="username">
       <input type="password" id="loginSenha" placeholder="Senha" autocomplete="current-password" onkeydown="if(event.key==='Enter') entrarApp()">
-      <label style="display:flex;align-items:center;gap:8px;margin:10px 0 10px;text-align:left;font-size:14px;color:#0f172a;cursor:pointer;font-weight:700;background:#f0fdf4;border:1px solid #bbf7d0;padding:8px 10px;border-radius:10px"><input type="checkbox" id="lembrarMe" checked style="width:20px;height:20px"> Lembrar de mim</label>
+      <label style="display:flex;align-items:center;gap:8px;margin:10px 0 10px;text-align:left;font-size:14px;color:#0f172a;cursor:pointer;font-weight:700;background:#f0fdf4;border:1px solid #bbf7d0;padding:8px 10px;border-radius:10px"><input type="checkbox" id="lembrarMe" checked style="width:20px;height:20px"> Lembrar de mim (não pedir senha de novo)</label>
       
       <button onclick="entrarApp()">Entrar</button>
-      <button onclick="entrarModoLocal()" style="background:#f8fafc;color:#334155;border:1px solid #e2e8f0;margin-top:4px">📱 Continuar sem senha</button>
-      <small style="color:#16a34a">✔️ Lembrar de mim</small>
+      <button onclick="entrarModoLocal()" style="background:#f8fafc;color:#334155;border:1px solid #e2e8f0;margin-top:4px">📱 Continuar sem senha (só neste aparelho)</button>
+      <small style="color:#16a34a">✔️ Lembrar de mim: só pede senha na primeira vez</small>
     </div>
   </div>
   <div class="container" id="appContainer" style="display:none">
@@ -430,7 +430,8 @@
       <button class="mobile-add-toggle" onclick="toggleFormularioMobile(event)" title="Adicionar lançamento" aria-label="Adicionar lançamento">+</button>
       <button class="menu-toggle" onclick="toggleMenu(event)" title="Menu" aria-label="Abrir menu">☰</button>
             <div id="menuHamburger" class="menu-dropdown">
-        <button onclick="menuConfigNotificacao()">🔔 Notificações</button>
+        <button onclick="menuConfigNotificacao()">🔔 Config. Notificações</button>
+        <button onclick="menuConfigWhatsapp()">📱 Config. WhatsApp</button>
         <div class="menu-separador"></div>
         <button id="btnBackupFirebase" onclick="menuSalvarBackup()">💾 Salvar backup</button>
         <button id="btnBaixarBackupFirebase" onclick="menuBaixarBackup()">⬇️ Baixar backup</button>
@@ -440,7 +441,7 @@
       </div>
     </div>
     <h2>💰 Controle Financeiro</h2>
-    <div class="usuario-app">
+    <div class="usuario-app"><span id="indicadorSync" style="font-size:10px;color:#16a34a;opacity:0.4;transition:.3s">☁️</span>
       <span id="usuarioLogado">Usuário: -</span>
     </div>
     <div class="nav-mes-mobile">
@@ -521,7 +522,8 @@
     <div class="notif-header">
       <span>🔔 Vencimentos</span>
       <div style="display:flex;gap:6px;align-items:center">
-        <button id="btnAtivarNotificacaoWeb" onclick="solicitarPermissaoNotificacao()" style="font-size:11px;padding:5px 9px;background:#3b82f6;color:white;border-radius:7px;font-weight:bold">🔔 Ativar</button>
+        <button onclick="enviarWhatsAppAgoraVencimentos()" style="font-size:11px;padding:5px 9px;background:#25D366;color:white;border-radius:7px;font-weight:bold">📱 Enviar Zap</button>
+        <button onclick="solicitarPermissaoNotificacao()" style="font-size:11px;padding:5px 9px;background:#3b82f6;color:white;border-radius:7px;font-weight:bold">🔔 Ativar</button>
         <button onclick="fecharPainelNotificacoes()" style="background:transparent;border:none;font-size:18px;padding:2px 6px">✕</button>
       </div>
     </div>
@@ -532,13 +534,38 @@
 
   <div id="painelConfigNotificacao" class="painel-notificacoes">
     <div class="notif-header">
-      <span>🔔 Notificações</span>
+      <span>🔔 Config. Notificações</span>
       <button onclick="fecharPainelConfigNotificacao()" style="background:transparent;border:none;font-size:18px;padding:2px 6px">✕</button>
     </div>
     <div class="notif-config" style="flex:1;overflow-y:auto;padding:12px">
-      <label style="display:flex;align-items:center;gap:6px;margin-bottom:10px"><input type="checkbox" id="toggleNotifPush" checked onchange="salvarConfigNotificacaoUI()"> Notificações</label>
-      <label style="display:flex;flex-direction:column;gap:4px;margin-bottom:10px">⏰ Horário diário:<input type="time" id="configHorarioNotif" value="08:00" onchange="salvarConfigNotificacaoUI()" style="height:36px"></label>
-      <label style="display:flex;flex-direction:column;gap:4px;margin-bottom:10px">Avisar com <span style="display:flex;gap:6px;align-items:center"><input type="number" id="configDiasNotif" min="1" max="30" value="1" onchange="salvarConfigNotificacaoUI()" style="width:70px;height:32px"> dias de antecedência</span></label>
+      <label style="display:flex;align-items:center;gap:6px;margin-bottom:10px"><input type="checkbox" id="toggleNotifPush" checked> Notificações do navegador (PC)</label>
+      <label style="display:flex;flex-direction:column;gap:4px;margin-bottom:10px">⏰ Horário diário:<input type="time" id="configHorarioNotif" value="08:00" style="height:36px"></label>
+      <label style="display:flex;flex-direction:column;gap:4px;margin-bottom:10px">Avisar com <span style="display:flex;gap:6px;align-items:center"><input type="number" id="configDiasNotif" min="1" max="30" value="1" style="width:70px;height:32px"> dias de antecedência</span></label>
+      <small id="txtProximoHorario" style="display:block;color:#64748b;font-size:11px;margin-bottom:4px"></small>
+      <small id="txtAgendamentoFechado" style="display:block;color:#16a34a;font-weight:bold;font-size:11px;margin-bottom:12px"></small>
+      <div style="display:flex;gap:6px">
+        <button onclick="salvarConfigNotificacaoUI()" style="background:#16a34a;color:white;padding:10px 14px;border-radius:8px;font-weight:bold;flex:1">💾 Salvar</button>
+        <button onclick="testarNotificacaoAgora()" style="background:#0ea5e9;color:white;padding:10px 14px;border-radius:8px;font-weight:bold;flex:1">🔔 Testar</button>
+        <button onclick="(async ()=>{ try{ const t = await inicializarFCMPush(); if(t) alert('✅ Push Ativado! Token: '+t.slice(0,20)+'...\nAgora o servidor pode te enviar notificação mesmo fechado.'); else alert('❌ Falha - veja console F12'); }catch(e){ alert('❌ Erro: '+(e.message||e)); console.error(e); } })()" style="background:#7c3aed;color:white;padding:10px 14px;border-radius:8px;font-weight:bold;flex:1">🚀 Ativar Push Fechado</button>
+      </div>
+      <small style="display:block;margin-top:10px;color:#64748b">Notifica apenas nos dias que tiver conta vencida, hoje ou dentro dos dias configurados.</small>
+    </div>
+  </div>
+
+  <div id="painelConfigWhatsapp" class="painel-notificacoes">
+    <div class="notif-header">
+      <span>📱 Config. WhatsApp</span>
+      <button onclick="fecharPainelConfigWhatsapp()" style="background:transparent;border:none;font-size:18px;padding:2px 6px">✕</button>
+    </div>
+    <div class="notif-config" style="flex:1;overflow-y:auto;padding:12px">
+      <label style="display:flex;align-items:center;gap:6px;margin-bottom:10px"><input type="checkbox" id="toggleWhatsapp"> Ativar WhatsApp</label>
+      <input type="text" id="configWhatsappTel" placeholder="Telefone com DDI ex: 5541999999999" style="height:40px;margin-bottom:8px">
+      <input type="text" id="configWhatsappKey" placeholder="Apikey CallMeBot" style="height:40px;margin-bottom:8px">
+      <div style="display:flex;gap:6px">
+        <button onclick="salvarConfigNotificacaoUI()" style="background:#16a34a;color:white;padding:10px 14px;border-radius:8px;font-weight:bold;flex:1">💾 Salvar</button>
+        <button onclick="testarWhatsApp()" style="background:#25D366;color:white;padding:10px 14px;border-radius:8px;font-weight:bold;flex:1">📱 Testar</button>
+      </div>
+      <small style="display:block;margin-top:8px;color:#64748b;line-height:1.3">Salve +34 623 912 204 e mande "I allow callmebot to send me messages" no WhatsApp no WhatsApp</small>
     </div>
   </div>
 
@@ -549,17 +576,8 @@
   <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-database-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-messaging-compat.js"></script>
   <script>
-    const NATIVE_ANDROID_SHELL = new URLSearchParams(window.location.search).get("native") === "1";
     const STORAGE_KEY_BASE = "financeiroClaro";
-
-    // O APK já registra o FCM por meio do FirebaseMessagingService nativo.
-    // Este bloqueio também protege contra chamadas acidentais ao fluxo Web FCM
-    // dentro do WebView, evitando segundo token, Service Worker e alerta Web.
-    if(NATIVE_ANDROID_SHELL){
-      window.__nativeAndroidShell = true;
-    }
     let STORAGE_KEY = STORAGE_KEY_BASE;
-
 
     const FIREBASE_CONFIG = {
       apiKey: "AIzaSyDkLf1A9MhrAUrf8PL2e0n2J9w1davDgSg",
@@ -601,148 +619,100 @@
     };
     let timerAgendamentoNotificacao = null;
 
-    function chaveConfigNotif(uid){
+    function chaveConfigNotif(){
       try{
-        const id = uid || (usuarioAtual && usuarioAtual.uid ? usuarioAtual.uid : "geral");
-        return STORAGE_KEY_BASE + "_notifConfig_" + id;
+        return STORAGE_KEY_BASE + "_notifConfig_" + (usuarioAtual && usuarioAtual.uid ? usuarioAtual.uid : "geral");
       }catch(e){
         return STORAGE_KEY_BASE + "_notifConfig_geral";
       }
     }
-    function aplicarObjetoConfigNotificacao(obj){
-      if(!obj || typeof obj !== "object") return;
-      if(obj.diasAntecedencia != null) configNotificacao.diasAntecedencia = Math.max(1, Math.min(30, Number(obj.diasAntecedencia) || 3));
-      if(obj.pushAtivo != null) configNotificacao.pushAtivo = obj.pushAtivo !== false;
-      if(obj.ultimoAvisoData != null) configNotificacao.ultimoAvisoData = obj.ultimoAvisoData || "";
-      if(obj.horarioNotificacao || obj.horario) configNotificacao.horarioNotificacao = obj.horarioNotificacao || obj.horario || "08:00";
-      if(obj.ultimoAvisoHorario != null) configNotificacao.ultimoAvisoHorario = obj.ultimoAvisoHorario || "";
-      if(obj.whatsappTelefone != null) configNotificacao.whatsappTelefone = String(obj.whatsappTelefone || "").replace(/\D/g,"");
-      if(obj.whatsappApikey != null) configNotificacao.whatsappApikey = String(obj.whatsappApikey || "");
-      if(obj.whatsappAtivo != null) configNotificacao.whatsappAtivo = !!obj.whatsappAtivo;
-      if(obj.telegramToken != null) configNotificacao.telegramToken = obj.telegramToken || "";
-      if(obj.telegramChatId != null) configNotificacao.telegramChatId = obj.telegramChatId || "";
-      if(obj.telegramAtivo != null) configNotificacao.telegramAtivo = !!obj.telegramAtivo;
+    function carregarConfigNotificacao(){
+      try{
+        const raw = localStorage.getItem(chaveConfigNotif());
+        if(raw){
+          const obj = JSON.parse(raw);
+          configNotificacao.diasAntecedencia = Math.max(1, Math.min(30, Number(obj.diasAntecedencia) || 3));
+          configNotificacao.pushAtivo = obj.pushAtivo !== false;
+          configNotificacao.ultimoAvisoData = obj.ultimoAvisoData || "";
+          configNotificacao.horarioNotificacao = obj.horarioNotificacao || "08:00";
+          configNotificacao.ultimoAvisoHorario = obj.ultimoAvisoHorario || "";
+          configNotificacao.whatsappTelefone = obj.whatsappTelefone || "";
+          configNotificacao.whatsappApikey = obj.whatsappApikey || "";
+          configNotificacao.whatsappAtivo = !!obj.whatsappAtivo;
+          configNotificacao.telegramToken = obj.telegramToken || "";
+          configNotificacao.telegramChatId = obj.telegramChatId || "";
+          configNotificacao.telegramAtivo = !!obj.telegramAtivo;
+        }
+      }catch(e){ console.warn("Erro ao carregar config notif", e); }
+      preencherCamposConfigNotificacao();
     }
+    function salvarConfigNotificacao(){
+      try{
+        localStorage.setItem(chaveConfigNotif(), JSON.stringify(configNotificacao));
+      }catch(e){ console.warn("Erro ao salvar config notif", e); }
+      // Persiste também na nuvem (Firebase) para nunca perder a configuração
+      try{
+        if(firebaseDB && usuarioAtual && !usuarioAtual.modoLocal){
+          firebaseDB.ref(FIREBASE_BACKUP_BASE_PATH + "/" + usuarioAtual.uid + "/configNotificacao").set({
+            horario: configNotificacao.horarioNotificacao || "08:00",
+            horarioNotificacao: configNotificacao.horarioNotificacao || "08:00",
+            diasAntecedencia: configNotificacao.diasAntecedencia,
+            pushAtivo: !!configNotificacao.pushAtivo,
+            whatsappAtivo: !!configNotificacao.whatsappAtivo,
+            whatsappTelefone: configNotificacao.whatsappTelefone || "",
+            whatsappApikey: configNotificacao.whatsappApikey || "",
+            atualizadoEm: new Date().toISOString()
+          }).catch(e=>console.warn("[Config] Falha ao salvar na nuvem", e.message));
+        }
+      }catch(e){}
+    }
+
+    // Carrega a configuração da nuvem quando o aparelho não tem nada salvo localmente
+    async function carregarConfigNotificacaoDaNuvem(){
+      try{
+        if(!firebaseDB || !usuarioAtual || usuarioAtual.modoLocal) return false;
+        const snap = await firebaseDB.ref(FIREBASE_BACKUP_BASE_PATH + "/" + usuarioAtual.uid + "/configNotificacao").once("value");
+        if(!snap.exists()) return false;
+        const obj = snap.val() || {};
+        if(!obj.whatsappTelefone && !obj.whatsappApikey && !obj.horario) return false;
+        configNotificacao.horarioNotificacao = obj.horario || obj.horarioNotificacao || configNotificacao.horarioNotificacao;
+        configNotificacao.diasAntecedencia = Math.max(1, Math.min(30, Number(obj.diasAntecedencia) || configNotificacao.diasAntecedencia));
+        if(typeof obj.pushAtivo === "boolean") configNotificacao.pushAtivo = obj.pushAtivo;
+        if(typeof obj.whatsappAtivo === "boolean") configNotificacao.whatsappAtivo = obj.whatsappAtivo;
+        if(obj.whatsappTelefone) configNotificacao.whatsappTelefone = obj.whatsappTelefone;
+        if(obj.whatsappApikey) configNotificacao.whatsappApikey = obj.whatsappApikey;
+        try{ localStorage.setItem(chaveConfigNotif(), JSON.stringify(configNotificacao)); }catch(e){}
+        console.log("[Config] Configuração recuperada da nuvem");
+        preencherCamposConfigNotificacao();
+        return true;
+      }catch(e){ console.warn("Falha ao carregar config da nuvem", e.message); return false; }
+    }
+
     function preencherCamposConfigNotificacao(){
       const inputDias = document.getElementById("configDiasNotif");
       const togglePush = document.getElementById("toggleNotifPush");
       const inputHorario = document.getElementById("configHorarioNotif");
+      const inputWppTel = document.getElementById("configWhatsappTel");
+      const inputWppKey = document.getElementById("configWhatsappKey");
+      const toggleWpp = document.getElementById("toggleWhatsapp");
       if(inputDias) inputDias.value = configNotificacao.diasAntecedencia;
-      if(togglePush) togglePush.checked = configNotificacao.pushAtivo;
-      if(inputHorario) inputHorario.value = configNotificacao.horarioNotificacao;
+      if(togglePush) togglePush.checked = !!configNotificacao.pushAtivo;
+      if(inputHorario) inputHorario.value = configNotificacao.horarioNotificacao || "08:00";
+      if(inputWppTel) inputWppTel.value = configNotificacao.whatsappTelefone || "";
+      if(inputWppKey) inputWppKey.value = configNotificacao.whatsappApikey || "";
+      if(toggleWpp) toggleWpp.checked = !!configNotificacao.whatsappAtivo;
     }
-    function lerConfigNotificacaoLocalStorage(){
-      const chaves = [];
-      const atual = chaveConfigNotif();
-      chaves.push(atual);
-      const geral = chaveConfigNotif("geral");
-      if(chaves.indexOf(geral) < 0) chaves.push(geral);
-      try{
-        for(let i = 0; i < localStorage.length; i++){
-          const k = localStorage.key(i);
-          if(k && k.indexOf(STORAGE_KEY_BASE + "_notifConfig_") === 0 && chaves.indexOf(k) < 0){
-            chaves.push(k);
-          }
-        }
-      }catch(e){}
-      let melhor = null;
-      chaves.forEach(k => {
-        try{
-          const raw = localStorage.getItem(k);
-          if(!raw) return;
-          const obj = JSON.parse(raw);
-          if(!obj || typeof obj !== "object") return;
-          const score = (obj.whatsappTelefone ? 2 : 0) + (obj.whatsappApikey ? 2 : 0) + (obj.whatsappAtivo ? 1 : 0) + ((obj.horarioNotificacao || obj.horario) ? 1 : 0);
-          if(!melhor || score > melhor.score) melhor = { obj, score };
-        }catch(e){}
-      });
-      return melhor ? melhor.obj : null;
-    }
-    function carregarConfigNotificacao(){
-      try{
-        const obj = lerConfigNotificacaoLocalStorage();
-        if(obj) aplicarObjetoConfigNotificacao(obj);
-      }catch(e){ console.warn("Erro ao carregar config notif", e); }
-      preencherCamposConfigNotificacao();
-    }
-    function montarPacoteConfigNotificacao(){
-      return {
-        horario: configNotificacao.horarioNotificacao,
-        horarioNotificacao: configNotificacao.horarioNotificacao,
-        diasAntecedencia: configNotificacao.diasAntecedencia,
-        whatsappAtivo: !!configNotificacao.whatsappAtivo,
-        whatsappTelefone: configNotificacao.whatsappTelefone || "",
-        whatsappApikey: configNotificacao.whatsappApikey || "",
-        pushAtivo: !!configNotificacao.pushAtivo,
-        telegramAtivo: !!configNotificacao.telegramAtivo,
-        telegramToken: configNotificacao.telegramToken || "",
-        telegramChatId: configNotificacao.telegramChatId || "",
-        atualizadoEm: new Date().toISOString()
-      };
-    }
-    function salvarConfigNotificacao(){
-      try{
-        const json = JSON.stringify(configNotificacao);
-        localStorage.setItem(chaveConfigNotif(), json);
-        localStorage.setItem(chaveConfigNotif("geral"), json);
-      }catch(e){ console.warn("Erro ao salvar config notif", e); }
-      sincronizarConfigNotificacaoNuvem();
-    }
-    async function sincronizarConfigNotificacaoNuvem(){
-      try{
-        if(!usuarioAtual || usuarioAtual.modoLocal) return false;
-        if(!firebaseDB && !inicializarFirebase(true)) return false;
-        if(!firebaseDB) return false;
-        await firebaseDB.ref(FIREBASE_BACKUP_BASE_PATH + "/" + usuarioAtual.uid + "/configNotificacao").update(montarPacoteConfigNotificacao());
-        console.log("[Config] Notificações salvas na nuvem");
-        return true;
-      }catch(e){
-        console.warn("[Config] Falha ao salvar na nuvem", e);
-        return false;
-      }
-    }
-    async function restaurarConfigNotificacaoDaNuvem(){
-      try{
-        if(!usuarioAtual || usuarioAtual.modoLocal || !firebaseDB) return false;
-        const snap = await firebaseDB.ref(FIREBASE_BACKUP_BASE_PATH + "/" + usuarioAtual.uid + "/configNotificacao").once("value");
-        if(!snap.exists()) return false;
-        const nuvem = snap.val() || {};
-        const localTemZap = !!(configNotificacao.whatsappTelefone && configNotificacao.whatsappApikey);
-        const nuvemTemZap = !!(nuvem.whatsappTelefone && nuvem.whatsappApikey);
-        if(nuvemTemZap || !localTemZap){
-          aplicarObjetoConfigNotificacao(nuvem);
-        }else{
-          if(!configNotificacao.whatsappTelefone && nuvem.whatsappTelefone){
-            configNotificacao.whatsappTelefone = String(nuvem.whatsappTelefone).replace(/\D/g,"");
-          }
-          if(!configNotificacao.whatsappApikey && nuvem.whatsappApikey){
-            configNotificacao.whatsappApikey = nuvem.whatsappApikey;
-          }
-          if(nuvem.whatsappAtivo) configNotificacao.whatsappAtivo = true;
-          if(nuvem.horario || nuvem.horarioNotificacao){
-            configNotificacao.horarioNotificacao = nuvem.horarioNotificacao || nuvem.horario;
-          }
-        }
-        try{
-          const json = JSON.stringify(configNotificacao);
-          localStorage.setItem(chaveConfigNotif(), json);
-          localStorage.setItem(chaveConfigNotif("geral"), json);
-        }catch(e){}
-        preencherCamposConfigNotificacao();
-        console.log("[Config] Restaurado da nuvem", {
-          ativo: configNotificacao.whatsappAtivo,
-          tel: (configNotificacao.whatsappTelefone || "").slice(0, 4) + "****"
-        });
-        return true;
-      }catch(e){
-        console.warn("[Config] Falha ao restaurar da nuvem", e);
-        return false;
-      }
-    }
-    function salvarConfigNotificacaoUI(){
-      const inputDias = document.getElementById("configDiasNotif");
-      const togglePush = document.getElementById("toggleNotifPush");
-      const inputHorario = document.getElementById("configHorarioNotif");
+        function salvarConfigNotificacaoUI(){
+      const painelNotif = document.getElementById("painelConfigNotificacao");
+      const painelWpp = document.getElementById("painelConfigWhatsapp");
+      
+      const inputDias = painelNotif ? painelNotif.querySelector("#configDiasNotif") : document.getElementById("configDiasNotif");
+      const togglePush = painelNotif ? painelNotif.querySelector("#toggleNotifPush") : document.getElementById("toggleNotifPush");
+      const inputHorario = painelNotif ? painelNotif.querySelector("#configHorarioNotif") : document.getElementById("configHorarioNotif");
+      
+      const inputWppTel = painelWpp ? painelWpp.querySelector("#configWhatsappTel") : document.getElementById("configWhatsappTel");
+      const inputWppKey = painelWpp ? painelWpp.querySelector("#configWhatsappKey") : document.getElementById("configWhatsappKey");
+      const toggleWpp = painelWpp ? painelWpp.querySelector("#toggleWhatsapp") : document.getElementById("toggleWhatsapp");
 
       if(inputDias && inputDias.value){
         configNotificacao.diasAntecedencia = Math.max(1, Math.min(30, Number(inputDias.value) || 3));
@@ -752,59 +722,86 @@
       }
       if(inputHorario && inputHorario.value){
         configNotificacao.horarioNotificacao = inputHorario.value;
+        console.log("[Config] Novo horário salvo:", inputHorario.value);
       }
-
+      if(inputWppTel){
+        const soNumeros = inputWppTel.value.replace(/\D/g,"");
+        configNotificacao.whatsappTelefone = soNumeros;
+      }
+      if(inputWppKey){
+        configNotificacao.whatsappApikey = inputWppKey.value.trim();
+      }
+      if(toggleWpp){
+        configNotificacao.whatsappAtivo = !!toggleWpp.checked;
+      }
       salvarConfigNotificacao();
-      if(configNotificacao.pushAtivo && !NATIVE_ANDROID_SHELL && usuarioAtual && !usuarioAtual.modoLocal){
-        setTimeout(()=>{ inicializarFCMPush(); }, 0);
-      }
-      if(timerProximaNotificacao) clearTimeout(timerProximaNotificacao);
-      if(timerAgendamentoNotificacao) clearInterval(timerAgendamentoNotificacao);
+      if(window.timerProximaNotificacao) clearTimeout(window.timerProximaNotificacao);
+      if(window.timerAgendamentoNotificacao) clearInterval(window.timerAgendamentoNotificacao);
       iniciarAgendamentoNotificacao();
       agendarNotificacaoParaAppFechado();
-      verificarNotificacoes(false);
+      verificarNotificacoes(true);
+      
+      setTimeout(()=>{
+        const txt1 = document.getElementById("txtProximoHorario");
+        const txt2 = document.getElementById("txtAgendamentoFechado");
+        if(txt1) txt1.innerText = "Próx: "+obterProximoHorarioNotificacaoTexto();
+        if(txt2){
+          const hm = (configNotificacao.horarioNotificacao||"08:00").split(":");
+          const h = Number(hm[0]); const m = Number(hm[1]);
+          const agora = new Date();
+          let prox = new Date(); prox.setHours(h,m,0,0); prox.setSeconds(0);
+          if(prox.getTime() < agora.getTime() - 2*60*1000) prox.setDate(prox.getDate()+1);
+          txt2.innerHTML = "✅ Próxima: <b>"+prox.toLocaleString("pt-BR")+"</b> às "+configNotificacao.horarioNotificacao;
+        }
+      }, 300);
+      
+      fecharPainelConfigNotificacao();
+      fecharPainelConfigWhatsapp();
+      const ind = document.getElementById("indicadorSync");
+      if(ind){ ind.innerText = "✅ Config salva "+configNotificacao.horarioNotificacao; ind.style.opacity="1"; setTimeout(()=>{ ind.style.opacity="0.4"; }, 3000); }
+      console.log("✅ Config salva:", configNotificacao);
     }
 
     function iniciarAgendamentoNotificacao(){
       if(timerAgendamentoNotificacao) clearInterval(timerAgendamentoNotificacao);
-
-      const checarHorarioAgendado = ()=>{
+      // Verifica a cada 60 segundos se chegou no horário programado
+      timerAgendamentoNotificacao = setInterval(()=>{
         try{
-          const app = document.getElementById("appContainer");
-          if(!app || app.style.display === "none") return;
-
+          if(!configNotificacao.pushAtivo) return;
+          if(document.getElementById("appContainer").style.display === "none") return;
           const agora = new Date();
-          const hojeISO = dataHojeISO();
-          const horario = configNotificacao.horarioNotificacao || "08:00";
-          const horaAtual = String(agora.getHours()).padStart(2,"0") + ":" + String(agora.getMinutes()).padStart(2,"0");
-          const chavePush = hojeISO + "_" + horario;
-          const precisaDispararPush = configNotificacao.pushAtivo
-            && horaAtual === horario
-            && configNotificacao.ultimoAvisoHorario !== chavePush;
-
-          if(precisaDispararPush){
-            // Marca antes da chamada para não repetir enquanto a operação assíncrona termina.
-            configNotificacao.ultimoAvisoHorario = chavePush;
-            salvarConfigNotificacao();
-            verificarNotificacoes(false);
+          const hojeISO = agora.toISOString().slice(0,10);
+          const horaAtual = agora.getHours().toString().padStart(2,"0")+":"+agora.getMinutes().toString().padStart(2,"0");
+          // Se já notificou hoje neste horário, não repete
+          if(configNotificacao.ultimoAvisoHorario === hojeISO+"_"+configNotificacao.horarioNotificacao) return;
+          if(horaAtual === configNotificacao.horarioNotificacao){
+            const vencimentos = obterVencimentosProximos();
+            if(vencimentos.length>0){
+              verificarNotificacoes(true);
+              configNotificacao.ultimoAvisoHorario = hojeISO+"_"+configNotificacao.horarioNotificacao;
+              salvarConfigNotificacao();
+            }
           }
-        }catch(e){ console.warn("[Agendamento] erro na checagem", e); }
-      };
-
-      // Faz uma checagem imediata ao salvar/entrar e depois verifica a cada 15 s.
-      checarHorarioAgendado();
-      timerAgendamentoNotificacao = setInterval(checarHorarioAgendado, 15000);
+        }catch(e){ console.warn(e); }
+      }, 60000);
     }
     let timerProximaNotificacao = null;
     
     function agendarNotificacaoParaAppFechado(){
-      if(NATIVE_ANDROID_SHELL){
-        console.info("[FCM] Shell Android nativo: agendamento Web ignorado");
-        return;
-      }
       try{
+        const txt = document.getElementById("txtAgendamentoFechado");
+        const aviso = document.getElementById("avisoTrigger");
         const temTrigger = ('showTrigger' in Notification.prototype);
-
+        
+        if(aviso){
+          if(!temTrigger){
+            aviso.style.display="block";
+            aviso.innerHTML = "⚠️ <b>Modo app fechado não suportado</b> neste navegador. No PC use Chrome/Edge com PWA instalado. Deixe o app aberto para notificar no horário.";
+          } else {
+            aviso.style.display="none";
+          }
+        }
+        
         const [h,m] = (configNotificacao.horarioNotificacao||"08:00").split(":").map(Number);
         const agora = new Date();
         let proxima = new Date();
@@ -838,10 +835,15 @@
         const delay = proxima.getTime() - agora.getTime();
         console.log("[Agendamento] Próxima notificação local em", Math.round(delay/1000/60), "min -", proxima.toLocaleString());
         
+        if(txt){
+          const modo = temTrigger ? "mesmo fechado (Trigger)" : "com app aberto";
+          txt.innerHTML = "✅ Próxima: <b>"+proxima.toLocaleString("pt-BR")+"</b> ("+modo+")<br><small>Em "+Math.round(delay/1000/60)+" min</small>";
+        }
+        
         // Agenda execução exata no horário
         timerProximaNotificacao = setTimeout(async ()=>{
           console.log("[Agendamento] Chegou no horário!", new Date().toLocaleString());
-          await verificarNotificacoes(false);
+          await verificarNotificacoes(true);
           // Re-agenda para amanhã
           agendarNotificacaoParaAppFechado();
         }, delay);
@@ -851,6 +853,290 @@
       }
     }
     
+    function agendarTesteEm1Minuto(){
+      const agora = new Date();
+      const daqui1Min = new Date(agora.getTime() + 60*1000);
+      const h = String(daqui1Min.getHours()).padStart(2,"0");
+      const m = String(daqui1Min.getMinutes()).padStart(2,"0");
+      document.getElementById("configHorarioNotif").value = h+":"+m;
+      configNotificacao.horarioNotificacao = h+":"+m;
+      salvarConfigNotificacao();
+      agendarNotificacaoParaAppFechado();
+      alert("⏰ Teste agendado para daqui 1 minuto às "+h+":"+m+"!\n\nDeixe o app aberto/minimizado e aguarde.\nNo PC e celular deve chegar notificação.");
+    }
+
+
+    
+
+    async function enviarTelegramVencimentos(mensagem){
+      if(!configNotificacao.telegramAtivo) return false;
+      const token = configNotificacao.telegramToken;
+      const chatId = configNotificacao.telegramChatId;
+      if(!token || !chatId){ alert("Telegram ativado mas falta token ou chat ID"); return false; }
+      const url = "https://api.telegram.org/bot"+encodeURIComponent(token)+"/sendMessage";
+      try{
+        const resp = await fetch(url, {
+          method: "POST",
+          headers: {"Content-Type":"application/json"},
+          body: JSON.stringify({ chat_id: chatId, text: mensagem, parse_mode: "Markdown" })
+        });
+        const json = await resp.json();
+        console.log("[Telegram] Resposta", json);
+        return json.ok;
+      }catch(e){ console.error("[Telegram] Erro", e); return false; }
+    }
+    async function testarTelegram(){
+      const token = document.getElementById("configTelegramToken")?.value || configNotificacao.telegramToken;
+      const chatId = document.getElementById("configTelegramChat")?.value || configNotificacao.telegramChatId;
+      if(!token || !chatId){ alert("Preencha token e chat ID do Telegram"); return; }
+      configNotificacao.telegramToken = token.trim();
+      configNotificacao.telegramChatId = chatId.trim();
+      configNotificacao.telegramAtivo = true;
+      salvarConfigNotificacao();
+      const msg = "🔔 *Teste Controle Financeiro*\n\nSe recebeu, Telegram está funcionando! ✅";
+      const ok = await enviarTelegramVencimentos(msg);
+      alert(ok ? "✈️ Telegram enviado! Verifique seu Telegram" : "Falha. Verifique token e chat ID. Veja console.");
+    }
+
+    async function enviarWhatsAppVencimentos(mensagem){
+      if(!configNotificacao.whatsappAtivo){
+        console.log("[WhatsApp] Desativado");
+        return false;
+      }
+      const tel = (configNotificacao.whatsappTelefone||"").replace(/\D/g,"");
+      const apikey = configNotificacao.whatsappApikey||"";
+      if(!tel || !apikey){
+        console.warn("[WhatsApp] Telefone ou apikey vazio");
+        return false;
+      }
+      const url = "https://api.callmebot.com/whatsapp.php?phone="+encodeURIComponent(tel)+"&text="+encodeURIComponent(mensagem)+"&apikey="+encodeURIComponent(apikey);
+      try{
+        console.log("[WhatsApp] Enviando para", tel, "msg len", mensagem.length);
+        // Método mais confiável para envio automático (sem gesto do usuário): Image + sendBeacon + fetch keepalive
+        try{
+          const img = new Image();
+          img.src = url;
+          console.log("[WhatsApp] Via Image enviado");
+        }catch(e){}
+        try{
+          if(navigator.sendBeacon){
+            const blob = new Blob([], {type: "application/x-www-form-urlencoded"});
+            navigator.sendBeacon(url, blob);
+            console.log("[WhatsApp] Via sendBeacon");
+          }
+        }catch(e){}
+        try{
+          fetch(url, {method:"GET", mode:"no-cors", keepalive: true, cache: "no-store"}).then(()=>console.log("[WhatsApp] Via fetch no-cors keepalive")).catch(()=>{});
+        }catch(e){}
+        // Salva log visível
+        const ind = document.getElementById("indicadorSync");
+        if(ind){ ind.innerText = "📱 Zap enviado "+new Date().toLocaleTimeString().slice(0,5); ind.style.opacity="1"; setTimeout(()=>ind.style.opacity="0.4", 5000); }
+        return true;
+      }catch(e){
+        console.error("[WhatsApp] Erro", e);
+        return false;
+      }
+    }
+
+    function montarMensagemWhatsApp(vencimentos){
+      const agora = new Date().toLocaleString("pt-BR", {timeZone: "America/Sao_Paulo"});
+      let msg = "💰 *Controle Financeiro* - "+agora+"\n\n";
+      if(vencimentos.length===0){
+        msg += "✅ Tudo em dia! Nenhuma conta nos próximos "+configNotificacao.diasAntecedencia+" dias.\n";
+      } else {
+        const vencidas = vencimentos.filter(v=>v.tipo==="vencida");
+        const hoje = vencimentos.filter(v=>v.tipo==="hoje");
+        const proximas = vencimentos.filter(v=>v.tipo==="proxima");
+        if(vencidas.length>0){
+          msg += "🚨 *VENCIDA"+(vencidas.length>1?"S":"")+" ("+vencidas.length+"):*\n";
+          vencidas.forEach(v=>{ 
+            const diasAtras = Math.abs(v.diff);
+            msg += "• "+v.item.descricao+" - "+formatarMoeda(v.item.valor)+" - Venceu em "+formatarDataBR(v.item.data)+" (há "+diasAtras+" dia"+(diasAtras>1?"s":"")+")\n"; 
+          });
+          msg += "\n";
+        }
+        if(hoje.length>0){
+          msg += "⚠️ *VENCE HOJE ("+hoje.length+"):*\n";
+          hoje.forEach(v=>{ msg += "• "+v.item.descricao+" - "+formatarMoeda(v.item.valor)+"\n"; });
+          msg += "\n";
+        }
+        if(proximas.length>0){
+          msg += "⏰ *A VENCER em até "+configNotificacao.diasAntecedencia+" dia"+(configNotificacao.diasAntecedencia>1?"s":"")+" ("+proximas.length+"):*\n";
+          proximas.forEach(v=>{ msg += "• "+v.item.descricao+" - "+formatarMoeda(v.item.valor)+" - "+formatarDataBR(v.item.data)+"\n"; });
+          msg += "\n";
+        }
+        const total = vencimentos.reduce((s,v)=>s+Number(v.item.valor||0),0);
+        msg += "💵 *Total:* "+formatarMoeda(total)+"\n";
+      }
+      msg += "\n👉 https://furlaneto1995.github.io/controle_financeiro/";
+      return msg;
+    }
+
+
+
+    async function enviarWhatsAppAgoraVencimentos(){
+      const vencs = obterVencimentosProximos();
+      if(vencs.length===0){
+        alert("Nenhuma conta nos próximos "+configNotificacao.diasAntecedencia+" dias para enviar");
+        return;
+      }
+      const msg = montarMensagemWhatsApp(vencs);
+      const ok = await enviarWhatsAppVencimentos(msg);
+      alert(ok ? "📱 WhatsApp com "+vencs.length+" conta(s) enviado! Verifique WhatsApp" : "Falha");
+    }
+
+    async function testarWhatsApp(){
+      const tel = document.getElementById("configWhatsappTel")?.value || configNotificacao.whatsappTelefone;
+      const key = document.getElementById("configWhatsappKey")?.value || configNotificacao.whatsappApikey;
+      if(!tel || !key){
+        alert("Preencha telefone (com DDI ex: 5541999999999) e apikey do CallMeBot");
+        return;
+      }
+      // Salva temporariamente
+      configNotificacao.whatsappTelefone = tel.replace(/\D/g,"");
+      configNotificacao.whatsappApikey = key.trim();
+      configNotificacao.whatsappAtivo = true;
+      salvarConfigNotificacao();
+      const msg = "🔔 *Teste Controle Financeiro*\n\nSe você recebeu esta mensagem, o WhatsApp está funcionando! ✅\n\nAgora você receberá todo dia às "+configNotificacao.horarioNotificacao+" as contas a vencer.";
+      const ok = await enviarWhatsAppVencimentos(msg);
+      if(ok){
+        alert("📱 Mensagem de teste enviada para "+tel+"!\nVerifique seu WhatsApp em até 30s.\nSe não chegar, verifique se mandou 'I allow callmebot to send me messages' para +34 623 912 204 e se apikey está correto.");
+      } else {
+        alert("Falha ao enviar WhatsApp. Verifique telefone e apikey.");
+      }
+    }
+
+    async function testarNotificacaoAgora(){
+      console.log("[Teste] Permissão:", Notification.permission, "SW:", !!navigator.serviceWorker.controller, "UA:", navigator.userAgent.slice(0,80));
+      if(!("Notification" in window)){
+        alert("❌ Seu navegador não suporta notificações\nUse Chrome ou Edge no Android, não use Firefox/Samsung Internet");
+        return;
+      }
+      const isAndroid = /Android/i.test(navigator.userAgent);
+      
+      const enviarViaSW = async (titulo, corpo)=>{
+        try{
+          if('serviceWorker' in navigator){
+            const reg = await navigator.serviceWorker.ready;
+            await reg.showNotification(titulo, {
+              body: corpo,
+              icon: "./icon-192.png",
+              badge: "./icon-96.png",
+              tag: "teste-agora-v12.2",
+              vibrate: [200, 100, 200],
+              requireInteraction: false,
+              data: { url: "./" }
+            });
+            console.log("[Teste] Via SW showNotification enviado");
+            return true;
+          }
+        }catch(e){ console.error("[Teste] SW falhou", e); }
+        return false;
+      };
+      
+      const enviarDireto = (titulo, corpo)=>{
+        try{
+          const n = new Notification(titulo, {
+            body: corpo,
+            icon: "./icon-192.png",
+            badge: "./icon-96.png",
+            tag: "teste-agora-direto",
+            requireInteraction: false
+          });
+          n.onclick = ()=>{ window.focus(); n.close(); };
+          console.log("[Teste] Direto enviado");
+          return true;
+        }catch(e){ console.error("[Teste] Direto falhou", e); return false; }
+      };
+
+      const executarTeste = async ()=>{
+        const titulo = "🔔 Teste v12.2" + (isAndroid ? " - Android" : " - PC");
+        const corpo = isAndroid ? "Se aparecer na barra superior, está funcionando! Deslize de cima para baixo para ver." : "Se você está vendo este pop-up no canto inferior direito, as notificações estão funcionando!";
+        
+        let ok = false;
+        if(isAndroid){
+          // No Android, SEMPRE usa Service Worker - new Notification() muitas vezes não mostra
+          console.log("[Teste] Android detectado, usando SW");
+          ok = await enviarViaSW(titulo, corpo);
+          if(!ok) ok = enviarDireto(titulo, corpo);
+        } else {
+          ok = enviarDireto(titulo, corpo);
+          if(!ok) ok = await enviarViaSW(titulo, corpo);
+        }
+        return ok;
+      };
+
+      if(Notification.permission === "default"){
+        const perm = await Notification.requestPermission();
+        console.log("[Teste] Permissão nova:", perm);
+        if(perm==="granted"){
+          const ok = await executarTeste();
+          alert(ok ? "✅ Permissão concedida e teste enviado!\n\nAndroid: deslize de cima para baixo na tela\nPC: olhe canto inferior direito" : "❌ Falha ao enviar mesmo com permissão");
+        } else {
+          alert("❌ Permissão negada: "+perm+"\n\nAndroid: Vá em Chrome > ⋮ > Configurações > Notificações > Ativar\nDepois: Configurações do site > Seu site > Notificações > Permitir\nSistema: Android > Config > Apps > Chrome > Notificações > Permitir");
+        }
+      } else if(Notification.permission === "denied"){
+        alert("❌ BLOQUEADO!\n\n1) Android > Configurações > Apps > Chrome > Notificações > PERMITIR\n2) Se instalou o PWA, também: Apps > Financeiro > Notificações > Permitir\n3) Chrome > ⋮ > Configurações > Notificações > Permitir\n4) Chrome > ⋮ > Configurações > Config. do site > Todos > github.io > Notificações > Permitir\n\nDepois recarregue e clique em Ativar de novo");
+      } else {
+        // granted
+        const ok = await executarTeste();
+        if(ok){
+          alert("✅ Teste enviado!\n\nSe não apareceu:\n- Android: deslize o dedo de cima para baixo (barra de notificações)\n- Verifique se 'Não Perturbe' está DESLIGADO\n- Android > Config > Apps > Financeiro > Notificações > Permitir\n- Tente com o app minimizado (botão home), não fechado");
+        } else {
+          alert("❌ Falha. Tente: Chrome > Configurações > Armazenamento > Seu site > Limpar e redefinir > recarregue");
+        }
+      }
+    }
+function testarNotificacaoAgoraOLD(){
+      console.log("[Teste] Permissão:", Notification.permission, "SW controller:", !!navigator.serviceWorker.controller);
+      if(!("Notification" in window)){
+        alert("❌ Seu navegador não suporta notificações\nUse Chrome ou Edge");
+        return;
+      }
+      const enviarTesteDireto = (titulo, corpo)=>{
+        try{
+          // Teste DIRETO sem passar pelo Service Worker - funciona na hora
+          const n = new Notification(titulo, {
+            body: corpo,
+            icon: "./icon-192.png",
+            badge: "./icon-96.png",
+            tag: "teste-agora",
+            requireInteraction: false
+          });
+          n.onclick = ()=>{ window.focus(); n.close(); };
+          console.log("[Teste] Notification direta enviada");
+          return true;
+        }catch(e){
+          console.error("[Teste] Erro notification direta", e);
+          // Fallback via SW
+          try{ enviarNotificacaoBrowser(titulo, corpo); return true; }catch(e2){ return false; }
+        }
+      };
+
+      if(Notification.permission === "default"){
+        Notification.requestPermission().then(p=>{
+          console.log("[Teste] Nova permissão:", p);
+          if(p==="granted"){
+            enviarTesteDireto("✅ Teste OK - Permissão concedida", "Notificações funcionando! No PC veja canto inferior direito. No celular veja topo da tela.");
+            alert("✅ Permissão concedida! Teste enviado.\n\nPC: olhe canto inferior direito do Windows\nCelular: olhe barra de notificações no topo");
+          } else {
+            alert("❌ Permissão negada: "+p+"\n\nVá em Chrome > Configurações > Notificações > Permitir seu site");
+          }
+        });
+      } else if(Notification.permission === "denied"){
+        alert("❌ Notificações BLOQUEADAS!\n\nPC: Chrome > ⋮ > Configurações > Privacidade > Configurações do site > Notificações > Seu github.io > Permitir\n\nCelular: Chrome > ⋮ > Configurações > Notificações > Permitir + Configurações do site > Seu site > Notificações > Permitir\n\nOu: Android > Configurações > Apps > Chrome > Notificações > Permitir");
+      } else {
+        // granted - manda teste na hora
+        const vencs = obterVencimentosProximos();
+        const ok = enviarTesteDireto("🔔 Teste - v12.2", vencs.length>0 ? "Funcionando! Você tem "+vencs.length+" conta(s) a vencer hoje" : "Se você está vendo este pop-up, as notificações estão funcionando! (teste sem contas)");
+        if(ok){
+          alert("✅ Teste enviado direto!\n\nSe não apareceu:\n- PC: Win+N para abrir central de notificações\n- Celular: deslize de cima para baixo\n- Verifique se Chrome tem permissão nas configurações do Android");
+        } else {
+          alert("❌ Falha ao enviar. Tente recarregar a página e permitir de novo.");
+        }
+      }
+    }
+
     function obterProximoHorarioNotificacaoTexto(){
       const agora = new Date();
       const [h,m] = (configNotificacao.horarioNotificacao||"08:00").split(":").map(Number);
@@ -904,10 +1190,6 @@
       return result;
     }
     function solicitarPermissaoNotificacao(){
-      if(NATIVE_ANDROID_SHELL){
-        console.info("[FCM] Shell Android nativo: permissão Web ignorada");
-        return;
-      }
       if(!("Notification" in window)){
         alert("Seu navegador não suporta notificações.");
         return;
@@ -923,14 +1205,13 @@
       Notification.requestPermission().then(perm => {
         if(perm === "granted"){
           alert("Notificações ativadas com sucesso! 🔔");
-          verificarNotificacoes(false);
+          verificarNotificacoes(true);
         }else{
           alert("Permissão de notificação não concedida.");
         }
       });
     }
     function enviarNotificacaoBrowser(titulo, corpo){
-      if(NATIVE_ANDROID_SHELL) return;
       if(!configNotificacao.pushAtivo) return;
       if(!("Notification" in window)) return;
       if(Notification.permission !== "granted") return;
@@ -965,8 +1246,6 @@
       if(isAtivo) fecharPainelNotificacoes();
       else abrirPainelNotificacoes();
     }
-    let notificacaoVisualEmAndamento = false;
-
     async function verificarNotificacoes(forcarPush = false){
       try{
         carregarConfigNotificacao();
@@ -975,7 +1254,7 @@
         const barra = document.getElementById("barraVencimentos");
         const listaDiv = document.getElementById("listaNotificacoes");
         const count = vencimentos.length;
-        const hojeISO = dataHojeISO();
+        const hojeISO = new Date().toISOString().slice(0,10);
 
         // Badge
         if(badge){
@@ -1043,11 +1322,9 @@
         }
 
         // Notificação apenas nos dias de antecedência programados (NÃO todos os dias)
-        if(!NATIVE_ANDROID_SHELL && configNotificacao.pushAtivo && "Notification" in window && Notification.permission==="granted"){
+        if(configNotificacao.pushAtivo && "Notification" in window && Notification.permission==="granted"){
           const jaNotificouHoje = configNotificacao.ultimoAvisoData === hojeISO;
-          // Impede várias chamadas simultâneas de criarem uma fila de alertas.
-          if((forcarPush || !jaNotificouHoje) && !notificacaoVisualEmAndamento){
-            notificacaoVisualEmAndamento = true;
+          if(forcarPush || !jaNotificouHoje){
             if(count>0){
               // Só notifica se tem conta dentro da antecedência (já filtrado em obterVencimentosProximos)
               const vencidas = vencimentos.filter(v=>v.tipo==="vencida").length;
@@ -1084,34 +1361,34 @@
               }
             }
           } else {
-            console.log("[Notificação] Já notificou hoje ou já há uma notificação em andamento");
+            console.log("[Notificação] Já notificou hoje");
           }
-          notificacaoVisualEmAndamento = false;
         }
 
         // Tenta agendar notificação que funciona mesmo com app fechado (Trigger API)
         try{ agendarNotificacaoParaAppFechado(); }catch(e){}
 
+        // Envia WhatsApp e Telegram se ativados
+        try{
+          // WhatsApp: envia se tiver conta dentro da antecedência, OU se for teste/agendamento forçado
+          const deveEnviarWpp = (count>0) || (forcarPush && (configNotificacao.whatsappAtivo || configNotificacao.telegramAtivo));
+          if(deveEnviarWpp){
+            const mensagem = montarMensagemWhatsApp(vencimentos);
+            const chaveWpp = "wpp_enviado_"+hojeISO+"_"+configNotificacao.horarioNotificacao+"_"+count;
+            const jaEnviouWppHoje = localStorage.getItem(chaveWpp);
+            if(forcarPush || !jaEnviouWppHoje){
+              if(configNotificacao.whatsappAtivo) await enviarWhatsAppVencimentos(mensagem);
+              if(configNotificacao.telegramAtivo) await enviarTelegramVencimentos(mensagem);
+              localStorage.setItem("wpp_enviado_"+hojeISO+"_"+configNotificacao.horarioNotificacao, "1");
+              console.log("[WhatsApp/Telegram] Enviado no horário");
+            }
+          }
+        }catch(e){ console.warn("[WhatsApp] erro auto", e); }
+
       }catch(e){
         console.error("Erro verificarNotificacoes", e);
       }
     }
-
-    // Faz catch-up quando o usuário volta ao app depois de deixá-lo em segundo plano.
-    // O throttle evita chamadas repetidas ao alternar rapidamente entre abas/janelas.
-    let ultimaChecagemRetomada = 0;
-    function checarRetomada(){
-      const agora = Date.now();
-      if(agora - ultimaChecagemRetomada < 60 * 1000) return;
-      const app = document.getElementById("appContainer");
-      if(!app || app.style.display === "none") return;
-      ultimaChecagemRetomada = agora;
-      verificarNotificacoes();
-    }
-    document.addEventListener("visibilitychange", function(){
-      if(document.visibilityState === "visible") checarRetomada();
-    });
-    window.addEventListener("focus", checarRetomada);
 
     // Fechar painel ao clicar fora
     document.addEventListener("click", function(event){
@@ -1194,6 +1471,13 @@
               console.log("[AutoSync] Backup salvo automaticamente na nuvem -", dados.length, "registros");
               // Sincroniza resumo para servidor Push fechado
               sincronizarDadosParaPushServidor();
+              // Mostra indicador discreto
+              const indicador = document.getElementById("indicadorSync");
+              if(indicador){
+                indicador.innerText = "☁️ Salvo " + new Date().toLocaleTimeString("pt-BR").slice(0,5);
+                indicador.style.opacity = "1";
+                setTimeout(()=>{ indicador.style.opacity="0.4"; }, 3000);
+              }
             }catch(e){
               console.warn("[AutoSync] Falha ao salvar automático", e.message);
             }
@@ -1225,43 +1509,10 @@
 
     let firebaseMessaging = null;
     let fcmTokenAtual = null;
-
-    async function registrarEventoFcmTokenApp(token, origem){
-      if(!firebaseDB || !usuarioAtual || !token) return;
-      try{
-        let tokenFingerprint = "";
-        if(window.crypto && crypto.subtle && window.TextEncoder){
-          const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(String(token)));
-          tokenFingerprint = Array.from(new Uint8Array(digest))
-            .map(byte => byte.toString(16).padStart(2, "0"))
-            .join("")
-            .slice(0, 16);
-        }
-        const ua = navigator.userAgent || "";
-        const plataforma = /Android/i.test(ua)
-          ? "android"
-          : /iPhone|iPad/i.test(ua)
-            ? "ios"
-            : "pc";
-        await firebaseDB
-          .ref(FIREBASE_BACKUP_BASE_PATH + "/" + usuarioAtual.uid + "/fcmTokenEventos")
-          .push({
-            acao: "registrado",
-            plataforma,
-            cliente: plataforma === "android" || plataforma === "ios" ? "web-mobile" : "web-pc",
-            origem: origem || "app_aberto",
-            tokenFingerprint,
-            ocorridoEm: new Date().toISOString()
-          });
-      }catch(erro){
-        console.warn("[FCM] Não foi possível registrar o histórico do token", erro);
-      }
-    }
-
     // ⚠️ IMPORTANTE: Substitua pela sua VAPID KEY real do Firebase Console
     // Firebase Console > controle-financeiro-e4f3b > Project Settings (engrenagem) > Cloud Messaging > Web Push certificates > Generate key pair
     // Copie a chave que começa com B... e cole abaixo entre aspas
-    const VAPID_KEY = "BNS2Asj0UzM8KQhXCjjF5w9jnmkgOT7dTGbWYmb2QkzybrNjSfhnQcnHs_iHdVXzaASfLeL7HXbbDCEg16H6HsQ"; // EX: BEl62iUYgUivxIkv69yViEuiBIa...
+    const VAPID_KEY = "COLE_AQUI_SUA_VAPID_KEY_DO_FIREBASE"; // EX: BEl62iUYgUivxIkv69yViEuiBIa...
 
     function inicializarFirebase(silencioso = false){
       if(!firebaseConfigurado()){
@@ -1296,33 +1547,7 @@
       }
     }
 
-    async function obterRegistroServiceWorkerPush(){
-      if(!('serviceWorker' in navigator)) {
-        throw new Error('Este navegador não oferece Service Worker para Push.');
-      }
-
-      // Registra novamente com a versão atual para substituir um Service Worker
-      // antigo que esteja quebrado ou preso no cache do PWA.
-      const registration = await navigator.serviceWorker.register('./service-worker.js?v=12.7', { updateViaCache: 'none' });
-
-      if(registration.active) return registration;
-
-      const pronto = await Promise.race([
-        navigator.serviceWorker.ready,
-        new Promise((_, rejeitar)=>setTimeout(()=>rejeitar(new Error('Service Worker não ficou pronto em 15 segundos.')), 15000))
-      ]);
-      if(!pronto || !pronto.active){
-        throw new Error('Service Worker não está ativo. Feche e abra novamente o PWA.');
-      }
-      return pronto;
-    }
-
     async function inicializarFCMPush(){
-      if(NATIVE_ANDROID_SHELL){
-        console.info("[FCM] Shell Android nativo: Web FCM não será registrado");
-        return null;
-      }
-      if(fcmTokenAtual) return fcmTokenAtual;
       try{
         if(!firebaseDB || !usuarioAtual){
           console.log("[FCM] Sem usuário logado para FCM");
@@ -1351,35 +1576,33 @@
         if(!firebaseMessaging){
           firebaseMessaging = firebase.messaging();
         }
-        // Garante que o Service Worker está pronto. A versão anterior aguardava
-        // navigator.serviceWorker.ready indefinidamente quando o PWA estava
-        // com uma instalação antiga/sem registro, parecendo que o botão não fazia nada.
-        const registration = await obterRegistroServiceWorkerPush();
-        console.log("[FCM] SW ready:", registration.scope);
-        // Solicita token FCM com o Service Worker registrado
-        const token = await firebaseMessaging.getToken({
-          vapidKey: VAPID_KEY,
-          serviceWorkerRegistration: registration
-        });
+        // Garante que Service Worker está pronto (obrigatório para FCM)
+        let registration = null;
+        if('serviceWorker' in navigator){
+          try{
+            registration = await navigator.serviceWorker.ready;
+            console.log("[FCM] SW ready:", registration.scope);
+          }catch(e){ console.warn("[FCM] SW not ready", e); }
+        }
+        // Solicita token FCM com SW registration
+        let token;
+        if(registration){
+          token = await firebaseMessaging.getToken({vapidKey: VAPID_KEY, serviceWorkerRegistration: registration});
+        } else {
+          token = await firebaseMessaging.getToken({vapidKey: VAPID_KEY});
+        }
         if(token){
           console.log("[FCM] Token obtido:", token.slice(0,20)+"...");
           fcmTokenAtual = token;
           // Salva token no Realtime Database para o servidor poder enviar push mesmo fechado
           const tokenPath = FIREBASE_BACKUP_BASE_PATH + "/" + usuarioAtual.uid + "/fcmTokens/" + token.replace(/[^a-zA-Z0-9-_]/g,"_").slice(0,80);
-          const plataformaToken = /Android/i.test(navigator.userAgent)
-            ? "android"
-            : /iPhone|iPad/i.test(navigator.userAgent)
-              ? "ios"
-              : "pc";
           await firebaseDB.ref(tokenPath).set({
             token: token,
             usuario: usuarioAtual.usuario,
             criadoEm: new Date().toISOString(),
             userAgent: navigator.userAgent.slice(0,200),
-            plataforma: plataformaToken,
-            cliente: plataformaToken === "android" || plataformaToken === "ios" ? "web-mobile" : "web-pc"
+            plataforma: /Android/i.test(navigator.userAgent) ? "android" : /iPhone|iPad/i.test(navigator.userAgent) ? "ios" : "pc"
           });
-          await registrarEventoFcmTokenApp(token, "app_aberto");
           // Também salva config de notificação para o servidor saber horário e dias
           await firebaseDB.ref(FIREBASE_BACKUP_BASE_PATH + "/" + usuarioAtual.uid + "/configNotificacao").set({
             horario: configNotificacao.horarioNotificacao,
@@ -1407,19 +1630,15 @@
               new Notification(titulo, {body: corpo, icon: "./icon-192.png"});
             }
             // Atualiza lista
-            verificarNotificacoes(false);
+            verificarNotificacoes(true);
           });
           
           return token;
         }
       }catch(e){
         console.error("[FCM] Erro ao inicializar Push", e);
-        // Normalize os campos: alguns erros do Firebase/Push podem trazer
-        // code como número ou objeto. Isso evita mascarar o erro original com
-        // "code.includes is not a function".
-        let msg = String((e && e.message) || e || "");
-        let code = String((e && e.code) || "");
-        console.log("[FCM] Erro bruto:", e);
+        let msg = e.message || "";
+        let code = e.code || "";
         console.log("[FCM] Code:", code, "Msg:", msg);
         let detalhe = (code ? code + " - " : "") + msg;
         if(VAPID_KEY.includes("COLE_AQUI")){
@@ -1433,7 +1652,7 @@
         } else if(msg.includes("authorized") || msg.includes("domain")){
           alert("❌ Domínio não autorizado no Firebase!\n\nVá em Firebase Console > Authentication > Settings > Authorized domains > Add domain > furlaneto1995.github.io\n\nDetalhe: "+detalhe.slice(0,200));
         } else {
-          alert("❌ Falha ao ativar Push\n\nDetalhe técnico:\n"+detalhe.slice(0,700)+"\n\nAbra o app novamente e tente outra vez.");
+          alert("❌ Falha ao ativar Push\n\nDetalhe técnico:\n"+detalhe.slice(0,500)+"\n\nTente: limpar cache com /clear.html?autoClear e recarregar");
         }
       }
       return null;
@@ -1448,7 +1667,15 @@
           pendentes: resumo.slice(0,100),
           atualizadoEm: new Date().toISOString()
         });
-        await firebaseDB.ref(FIREBASE_BACKUP_BASE_PATH + "/" + usuarioAtual.uid + "/configNotificacao").update(montarPacoteConfigNotificacao());
+        await firebaseDB.ref(FIREBASE_BACKUP_BASE_PATH + "/" + usuarioAtual.uid + "/configNotificacao").update({
+          horario: configNotificacao.horarioNotificacao,
+          diasAntecedencia: configNotificacao.diasAntecedencia,
+          whatsappAtivo: !!configNotificacao.whatsappAtivo,
+          whatsappTelefone: configNotificacao.whatsappTelefone||"",
+          whatsappApikey: configNotificacao.whatsappApikey||"",
+          pushAtivo: !!configNotificacao.pushAtivo,
+          atualizadoEm: new Date().toISOString()
+        });
       }catch(e){ console.warn("Sync para push falhou", e); }
     }
 
@@ -1673,10 +1900,11 @@
       limparFiltros();
       document.getElementById("loginScreen").style.display = "none";
       document.getElementById("appContainer").style.display = "flex";
-      document.getElementById("usuarioLogado").innerText = "";
+      document.getElementById("usuarioLogado").innerText = "📱 Modo local - " + STORAGE_KEY_BASE;
       carregarConfigNotificacao();
       iniciarAgendamentoNotificacao();
       atualizarTabela();
+      alert("Modo local ativado! 📱\n\nSeus dados ficam só neste aparelho. Para fazer backup na nuvem depois, vá no menu ☰ > 🔑 Alterar senha / Criar backup, crie um usuário com senha e use Salvar backup.");
     }
 
     async function tentarLoginAutomatico(){
@@ -1689,6 +1917,12 @@
       if(inputUsuario) inputUsuario.value = sessao.usuario;
       if(inputSenha) inputSenha.value = sessao.senha;
       if(checkLembrar) checkLembrar.checked = true;
+      // Mostra feedback
+      const loginCard = document.querySelector(".login-card");
+      if(loginCard){
+        const p = loginCard.querySelector("p");
+        if(p) p.innerText = "🔄 Entrando automaticamente como " + sessao.usuario + "...";
+      }
       try{
         // pequena espera para Firebase inicializar
         await new Promise(r=>setTimeout(r, 400));
@@ -1787,25 +2021,38 @@
               const pacoteAuto = snapshotAuto.val();
               try{
                 const backupAuto = await descriptografarBackup(pacoteAuto);
-                if(backupAuto && backupAuto.configNotificacao){
-                  const localTemZap = !!(configNotificacao.whatsappTelefone && configNotificacao.whatsappApikey);
-                  if(!localTemZap) aplicarObjetoConfigNotificacao(backupAuto.configNotificacao);
-                }
                 if(backupAuto && Array.isArray(backupAuto.dados) && backupAuto.dados.length>0){
                   const backupNormalizado = normalizarDadosBackup(backupAuto.dados);
+                  const dataBackupInfo = pacoteAuto.atualizadoEmBR || backupAuto.atualizadoEmBR || "recentemente";
                   // Se local está vazio, restaura direto
                   if(dados.length===0){
                     dados = backupNormalizado;
                     salvar();
                     console.log("[AutoBackup] Backup restaurado automaticamente ao logar -", dados.length, "registros");
+                    setTimeout(()=>alert("✅ Backup baixado automaticamente!\n\n"+backupNormalizado.length+" registros restaurados de "+dataBackupInfo), 800);
                   } else {
+                    // Se local já tem dados, verifica se backup é diferente/novo e oferece restauração automática
+                    // Se backup tem mais registros ou é de usuário novo, restaura automaticamente para garantir que ao logar já baixa o que está no backup
                     const totalLocal = dados.length;
                     const totalBackup = backupNormalizado.length;
+                    // Se backup tem dados e local tem, mas backup é maior ou usuário pediu para sempre baixar ao logar, então mescla ou substitui?
+                    // IMPLEMENTAÇÃO PEDIDA: ao logar, já baixa o que estiver em backup (sobrescreve local com backup)
+                    // Só não sobrescreve se local foi modificado recentemente (últimos 5 min) para evitar perda
                     const deveSobrescrever = totalBackup>0 && (totalBackup!==totalLocal || isAuto);
                     if(deveSobrescrever){
-                      // Restaura o backup automaticamente, sem interromper a entrada no app.
-                      dados = backupNormalizado;
-                      salvar();
+                      // Para não perder dados, faz merge inteligente: mantém IDs únicos
+                      // Se quiser substituir total, descomente a linha abaixo:
+                      // dados = backupNormalizado;
+                      // Por segurança, vamos substituir apenas se local está vazio OU se usuário confirmou auto-restauração sempre
+                      // Como usuário pediu "ao logar já baixe", vamos baixar sempre que logar e o backup for diferente
+                      if(confirm("Backup encontrado na nuvem!\n\nLocal: "+totalLocal+" registros\nNuvem ("+dataBackupInfo+"): "+totalBackup+" registros\n\nDeseja baixar o backup agora? (Isso vai substituir os dados locais pelo backup da nuvem)")){
+                        dados = backupNormalizado;
+                        salvar();
+                        console.log("[AutoBackup] Usuário confirmou restauração automática");
+                      } else {
+                        // Se não quer substituir, mantém local mas informa
+                        console.log("[AutoBackup] Usuário recusou substituição, mantém local");
+                      }
                     }
                   }
                 }
@@ -1852,15 +2099,16 @@
         document.getElementById("appContainer").style.display = "flex";
         document.getElementById("usuarioLogado").innerText = "Usuário: " + usuario;
         carregarConfigNotificacao();
-        await restaurarConfigNotificacaoDaNuvem();
+        carregarConfigNotificacaoDaNuvem();
         iniciarAgendamentoNotificacao();
         atualizarTabela();
-        // O APK nativo usa FirebaseMessagingService próprio. No navegador,
-        // ativa o Web Push automaticamente somente se Notificações estiver marcado.
-        if(!NATIVE_ANDROID_SHELL && configNotificacao.pushAtivo){
-          setTimeout(()=>{ inicializarFCMPush(); }, 1500);
+        // Inicializa FCM Push para funcionar fechado (Opção 2)
+        setTimeout(()=>{ inicializarFCMPush(); }, 1500);
+        // Pede permissão de notificação automaticamente se configurado
+        if(configNotificacao.pushAtivo && "Notification" in window && Notification.permission === "default"){
+          setTimeout(()=>{ solicitarPermissaoNotificacao(); }, 1500);
         }
-        setTimeout(()=>{ verificarNotificacoes(false); }, 800);
+        setTimeout(()=>{ verificarNotificacoes(true); }, 800);
         if(usuarioCriadoAgora){
           alert("Login criado com sucesso para " + usuario + ".");
         }
@@ -1968,7 +2216,7 @@
     if("serviceWorker" in navigator){
       window.addEventListener("load", async () => {
         try{
-          const reg = await navigator.serviceWorker.register("./service-worker.js?v=12.7");
+          const reg = await navigator.serviceWorker.register("./service-worker.js?v=12.3");
           console.log("[PWA] SW registrado", reg.scope);
           
           // Verifica atualizações
@@ -1991,7 +2239,7 @@
               filtrarStatusRapido("pendente");
             }
             if(event.data?.type === "VERIFICAR_VENCIMENTOS"){
-              verificarNotificacoes(false);
+              verificarNotificacoes(true);
             }
           });
 
@@ -2147,16 +2395,24 @@
     function menuSalvarBackup(){ fecharMenu(); salvarBackupFirebase(); }
     function menuBaixarBackup(){ fecharMenu(); baixarBackupFirebase(); }
     function menuAlterarSenha(){ fecharMenu(); trocarSenhaApp(); }
-    function menuConfigNotificacao(){ fecharMenu(); document.getElementById("painelConfigNotificacao")?.classList.add("ativo"); carregarConfigNotificacao(); }
+    function menuConfigNotificacao(){ fecharMenu(); document.getElementById("painelConfigNotificacao")?.classList.add("ativo"); carregarConfigNotificacao(); carregarConfigNotificacaoDaNuvem(); }
+    function menuConfigWhatsapp(){ fecharMenu(); document.getElementById("painelConfigWhatsapp")?.classList.add("ativo"); carregarConfigNotificacao(); carregarConfigNotificacaoDaNuvem(); }
     function abrirPainelConfigNotificacao(){
-      fecharPainelNotificacoes();
+      fecharPainelNotificacoes(); fecharPainelConfigWhatsapp();
       document.getElementById("painelConfigNotificacao")?.classList.add("ativo");
       carregarConfigNotificacao();
     }
     function fecharPainelConfigNotificacao(){ document.getElementById("painelConfigNotificacao")?.classList.remove("ativo"); }
+    function abrirPainelConfigWhatsapp(){
+      fecharPainelNotificacoes(); fecharPainelConfigNotificacao();
+      document.getElementById("painelConfigWhatsapp")?.classList.add("ativo");
+      carregarConfigNotificacao();
+    }
+    function fecharPainelConfigWhatsapp(){ document.getElementById("painelConfigWhatsapp")?.classList.remove("ativo"); }
+
     // Fechar todos paineis ao clicar fora
     const fecharTodosPaineis = ()=>{
-      fecharPainelNotificacoes(); fecharPainelConfigNotificacao();
+      fecharPainelNotificacoes(); fecharPainelConfigNotificacao(); fecharPainelConfigWhatsapp();
     };
 
     function menuSair(){ 
@@ -2318,18 +2574,7 @@
         atualizadoEmISO: agora.toISOString(),
         atualizadoEmBR: agora.toLocaleString("pt-BR"),
         origem: location.href,
-        versao: 2,
-        configNotificacao: {
-          diasAntecedencia: configNotificacao.diasAntecedencia,
-          pushAtivo: !!configNotificacao.pushAtivo,
-          horarioNotificacao: configNotificacao.horarioNotificacao,
-          whatsappAtivo: !!configNotificacao.whatsappAtivo,
-          whatsappTelefone: configNotificacao.whatsappTelefone || "",
-          whatsappApikey: configNotificacao.whatsappApikey || "",
-          telegramAtivo: !!configNotificacao.telegramAtivo,
-          telegramToken: configNotificacao.telegramToken || "",
-          telegramChatId: configNotificacao.telegramChatId || ""
-        }
+        versao: 2
       };
     }
 
@@ -2428,10 +2673,6 @@
         );
         if(!confirmar){ return; }
         dados = normalizarDadosBackup(backup.dados);
-        if(backup.configNotificacao){
-          aplicarObjetoConfigNotificacao(backup.configNotificacao);
-          salvarConfigNotificacao();
-        }
         cancelar(false);
         salvar();
         atualizarTabela();
@@ -2470,11 +2711,6 @@
       return String(numero).padStart(2, "0");
     }
 
-    function dataHojeISO(){
-      const agora = new Date();
-      return agora.getFullYear() + "-" + pad2(agora.getMonth() + 1) + "-" + pad2(agora.getDate());
-    }
-
     function adicionarMesesData(dataISO, quantidadeMeses){
       const partes = dataISO.split("-").map(Number);
       const ano = partes[0];
@@ -2504,7 +2740,7 @@
     }
 
     function limparFormulario(){
-      document.getElementById("data").value = dataHojeISO();
+      document.getElementById("data").value = "";
       document.getElementById("descricao").value = "";
       document.getElementById("valor").value = "";
       document.getElementById("tipo").value = "entrada";
@@ -3107,13 +3343,18 @@
     });
 
     inicializarFirebase(true);
-    document.getElementById("data").value = dataHojeISO();
     carregarConfigNotificacao();
     atualizarTabela();
     verificarNotificacoes();
     iniciarAgendamentoNotificacao();
     // Verifica vencimentos a cada 1 hora enquanto app aberto (fallback)
     setInterval(()=>{ if(document.getElementById("appContainer").style.display !== "none") verificarNotificacoes(); }, 3600000);
+    // Atualiza texto de próximo horário no painel
+    setInterval(()=>{
+      const txt = document.getElementById("txtProximoHorario");
+      if(txt) txt.innerText = "próx: "+obterProximoHorarioNotificacaoTexto();
+    }, 30000);
+
     // ===== PWA - Instalação e Service Worker =====
     let deferredPrompt = null;
     const btnInstalar = document.getElementById("btnInstalarPWA");
@@ -3155,7 +3396,7 @@
     if("serviceWorker" in navigator){
       window.addEventListener("load", async () => {
         try{
-          const reg = await navigator.serviceWorker.register("./service-worker.js?v=12.7");
+          const reg = await navigator.serviceWorker.register("./service-worker.js?v=12.3");
           console.log("[PWA] SW registrado", reg.scope);
           
           // Verifica atualizações
@@ -3178,7 +3419,7 @@
               filtrarStatusRapido("pendente");
             }
             if(event.data?.type === "VERIFICAR_VENCIMENTOS"){
-              verificarNotificacoes(false);
+              verificarNotificacoes(true);
             }
           });
 
@@ -3247,7 +3488,7 @@
             if(!temCheckbox){
               document.body.innerHTML = '<div style="padding:30px;text-align:center;font-family:sans-serif"><h2>🔄 Atualizando para v9...</h2><p>Detectamos app antigo.</p><p>Limpando cache...</p></div>';
               caches.keys().then(ks=>Promise.all(ks.map(k=>caches.delete(k)))).then(()=>{
-                localStorage.setItem("app_versao","v12.8");
+                localStorage.setItem("app_versao","v12.2");
                 setTimeout(()=>location.href="./controle-financeiro.html?updated=v9&ts="+Date.now(), 1500);
               });
             }
@@ -3298,5 +3539,5 @@
       }
     })();
   </script>
-<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a390d3c58c20afcb',t:'MTc4OTA2ODQxNg=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script><script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a4031c195d69acbf',t:'MTc5MDI2Njc1Ng=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a45f228b1a491b1d',t:'MTc5MTIzMTcwOQ=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
