@@ -2,12 +2,16 @@
 #  Controle Financeiro - Aviso diario de vencimentos
 #  Envia WhatsApp (CallMeBot) e Push (FCM) 1x por dia.
 #
-#  Horario do disparo (Brasil / America/Sao_Paulo = UTC-3):
-#    08:00 BRT -> cron '0 11 * * *'   <-- atual
-#    12:00 BRT -> cron '0 15 * * *'
-#    18:00 BRT -> cron '0 21 * * *'
-#    20:00 BRT -> cron '0 23 * * *'
-#  Troque a linha "cron:" abaixo se quiser outro horario.
+#  COMO FUNCIONA:
+#   - Uma automacao externa (heartbeat) chama este workflow
+#     a cada 5 minutos. E ela que garante a confiabilidade
+#     (o schedule do GitHub pode atrasar em repos muito ativos).
+#   - O workflow so envia DEPOIS do horario configurado por
+#     usuario (configNotificacao.horario), apenas 1x por dia
+#     (chave de historico aviso_YYYY-MM-DD), e somente se
+#     houver contas vencendo na janela de antecedencia.
+#   - Teste manual: Actions > Run workflow > force = true.
+#   - Se o heartbeat parar, sobra o cron de seguranca as 08:00 BRT.
 # ============================================================
 name: Aviso diario de vencimentos
 
@@ -137,6 +141,15 @@ jobs:
                 const resumo = u.dadosResumo;
                 if(!cfg){ console.log(`${uid}: sem configNotificacao (entre no app com este usuario)`); continue; }
                 if(!resumo || !Array.isArray(resumo.pendentes)){ console.log(`${uid}: sem dadosResumo (abra o app v12.2 e faca login)`); continue; }
+
+                // Portao de horario: so envia depois do horario configurado.
+                // O heartbeat de 5 min passa aqui varias vezes; o primeiro
+                // horario apos o configurado dispara o envio (1x por dia).
+                const partes = String(cfg.horario || '08:00').split(':');
+                const hCfg = Number(partes[0]); const mCfg = Number(partes[1] || 0);
+                const cfgAbs = (isNaN(hCfg) ? 8 : hCfg) * 60 + (isNaN(mCfg) ? 0 : mCfg);
+                const agoraAbs = agora.hora * 60 + agora.minuto;
+                if(!forcar && agoraAbs < cfgAbs){ console.log(`${uid}: aguardando horario ${cfg.horario || '08:00'}`); continue; }
 
                 const dias = Math.max(1, Math.min(30, Number(cfg.diasAntecedencia) || 1));
                 const venc = resumo.pendentes
