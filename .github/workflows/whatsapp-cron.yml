@@ -19,7 +19,7 @@ on:
       force:
         description: 'Forcar envio agora (teste)'
         required: false
-        default: 'true'
+        default: 'false'
         type: boolean
 
 jobs:
