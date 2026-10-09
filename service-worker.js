@@ -1,9 +1,11 @@
-/* Controle Financeiro PWA v12.2.4 - Web Push com Firebase Cloud Messaging */
-const CACHE_NAME = "financeiro-v12.2-final";
-const ICONS = ["./manifest.json","./icon-96.png","./icon-192.png","./icon-512.png"];
+/* Controle Financeiro PWA v12.4 - Web Push com Firebase Cloud Messaging */
+const CACHE_NAME = "financeiro-v12.4";
+const PRECACHE = ["./", "./index.html", "./manifest.json", "./icon-96.png", "./icon-192.png", "./icon-512.png"];
 
-importScripts("https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js");
-importScripts("https://www.gstatic.com/firebasejs/10.12.5/firebase-messaging-compat.js");
+try{
+  importScripts("https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js");
+  importScripts("https://www.gstatic.com/firebasejs/10.12.5/firebase-messaging-compat.js");
+}catch(e){ console.warn("[SW] importScripts firebase falhou (Push em background desativado)", e); }
 
 const FIREBASE_CONFIG_SW = {
   apiKey: "AIzaSyDkLf1A9MhrAUrf8PL2e0n2J9w1davDgSg",
@@ -37,12 +39,16 @@ try{
 }catch(e){ console.warn("[SW] FCM init falhou", e); }
 
 self.addEventListener("install", e=>{
-  console.log("[SW v12.2.4] Install");
-  e.waitUntil(caches.open(CACHE_NAME).then(c=>c.addAll(ICONS)).then(()=>self.skipWaiting()));
+  console.log("[SW v12.4] Install");
+  e.waitUntil(
+    caches.open(CACHE_NAME)
+      .then(c=>c.addAll(PRECACHE).catch(()=>{}))
+      .then(()=>self.skipWaiting())
+  );
 });
 
 self.addEventListener("activate", e=>{
-  console.log("[SW v12.2.4] Activate - limpando antigos");
+  console.log("[SW v12.4] Activate - limpando antigos");
   e.waitUntil(
     caches.keys().then(keys=>Promise.all(keys.filter(k=>k!==CACHE_NAME).map(k=>caches.delete(k))))
     .then(()=>self.clients.claim())
@@ -50,14 +56,22 @@ self.addEventListener("activate", e=>{
 });
 
 self.addEventListener("fetch", e=>{
+  // NUNCA tenta cachear POST/PUT/DELETE (Firebase, FCM etc.) - so GET
+  if(e.request.method !== "GET") return;
   const url = e.request.url;
   if(e.request.mode==="navigate" || url.includes("index.html") || url.includes("manifest.json") || url.includes("service-worker.js") || url.includes("firebase")){
-    e.respondWith(fetch(e.request, {cache:"no-store"}).catch(()=>caches.match("./icon-192.png")));
+    e.respondWith(
+      fetch(e.request, {cache:"no-store"})
+        .catch(()=>caches.match("./index.html"))
+    );
     return;
   }
   e.respondWith(
     fetch(e.request).then(resp=>{
-      if(resp&&resp.ok){ const copy=resp.clone(); caches.open(CACHE_NAME).then(c=>c.put(e.request, copy)); }
+      if(resp && resp.ok && resp.type==="basic"){
+        const copy = resp.clone();
+        caches.open(CACHE_NAME).then(c=>c.put(e.request, copy).catch(()=>{}));
+      }
       return resp;
     }).catch(()=>caches.match(e.request))
   );
