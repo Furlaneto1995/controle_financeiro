@@ -546,7 +546,7 @@
       <div style="display:flex;gap:6px">
         <button onclick="salvarConfigNotificacaoUI()" style="background:#16a34a;color:white;padding:10px 14px;border-radius:8px;font-weight:bold;flex:1">💾 Salvar</button>
         <button onclick="testarNotificacaoAgora()" style="background:#0ea5e9;color:white;padding:10px 14px;border-radius:8px;font-weight:bold;flex:1">🔔 Testar</button>
-        <button onclick="(async ()=>{ try{ const t = await inicializarFCMPush(); if(t) alert('✅ Push Ativado! Token: '+t.slice(0,20)+'...\nAgora o servidor pode te enviar notificação mesmo fechado.'); else alert('❌ Falha - veja console F12'); }catch(e){ alert('❌ Erro: '+(e.message||e)); console.error(e); } })()" style="background:#7c3aed;color:white;padding:10px 14px;border-radius:8px;font-weight:bold;flex:1">🚀 Ativar Push Fechado</button>
+        <button onclick="(async ()=>{ try{ const t = await inicializarFCMPush(); if(t==="NATIVO"){ /* status já exibido pelo verificarCanalAndroidNativo */ } else if(t) alert('✅ Push Ativado! Token: '+t.slice(0,20)+'...\nAgora o servidor pode te enviar notificação mesmo fechado.'); else alert('❌ Falha - veja console F12'); }catch(e){ alert('❌ Erro: '+(e.message||e)); console.error(e); } })()" style="background:#7c3aed;color:white;padding:10px 14px;border-radius:8px;font-weight:bold;flex:1">🚀 Ativar Push Fechado</button>
       </div>
       <small style="display:block;margin-top:10px;color:#64748b">Notifica apenas nos dias que tiver conta vencida, hoje ou dentro dos dias configurados.</small>
     </div>
@@ -1547,7 +1547,29 @@ function testarNotificacaoAgoraOLD(){
       }
     }
 
+    // Modo APP Android (APK WebView abre o site com ?native=1):
+    // o WebView nao tem API Notification; o token FCM e registrado
+    // pelo proprio aplicativo (nativo) ao abrir. Aqui so conferimos.
+    const MODO_APP_NATIVE = new URLSearchParams(window.location.search).get("native") === "1";
+
+    async function verificarCanalAndroidNativo(silencioso){
+      try{
+        if(!firebaseDB || !usuarioAtual) return 0;
+        const snap = await firebaseDB.ref(FIREBASE_BACKUP_BASE_PATH + "/" + usuarioAtual.uid + "/fcmTokens").once("value");
+        const vals = Object.values(snap.val() || {});
+        const nativos = vals.filter(v => v && (v.cliente === "android-native" || v.plataforma === "android"));
+        if(nativos.length){
+          const ultimo = nativos.map(n => n.criadoEm || "").sort().pop() || "";
+          if(!silencioso) alert("✅ Canal do APP Android já está ATIVO!\n\nToken nativo registrado em: " + ultimo + "\nVocê receberá notificações mesmo com o app fechado.\n\nNão precisa ativar mais nada aqui dentro.");
+          return nativos.length;
+        }
+        if(!silencioso) alert("ℹ️ Nenhum token do APP Android encontrado ainda.\n\nSaia daqui e ABRA O APLICATIVO (ícone Controle Financeiro) com internet: ele registra o token sozinho ao abrir.\nDepois volte aqui só para conferir.");
+        return 0;
+      }catch(e){ console.warn("[Native] verificação falhou", e); return 0; }
+    }
+
     async function inicializarFCMPush(){
+      if(MODO_APP_NATIVE){ await verificarCanalAndroidNativo(false); return "NATIVO"; }
       try{
         if(!firebaseDB || !usuarioAtual){
           console.log("[FCM] Sem usuário logado para FCM");
@@ -2103,7 +2125,8 @@ function testarNotificacaoAgoraOLD(){
         iniciarAgendamentoNotificacao();
         atualizarTabela();
         // Inicializa FCM Push para funcionar fechado (Opção 2)
-        setTimeout(()=>{ inicializarFCMPush(); }, 1500);
+        // No APK (WebView) apenas confere o canal nativo, sem alertas
+        setTimeout(()=>{ if(MODO_APP_NATIVE){ verificarCanalAndroidNativo(true); } else { inicializarFCMPush(); } }, 1500);
         // Pede permissão de notificação automaticamente se configurado
         if(configNotificacao.pushAtivo && "Notification" in window && Notification.permission === "default"){
           setTimeout(()=>{ solicitarPermissaoNotificacao(); }, 1500);
@@ -2216,7 +2239,7 @@ function testarNotificacaoAgoraOLD(){
     if("serviceWorker" in navigator){
       window.addEventListener("load", async () => {
         try{
-          const reg = await navigator.serviceWorker.register("./service-worker.js?v=12.4"); 
+          const reg = await navigator.serviceWorker.register("./service-worker.js?v=12.4");
           console.log("[PWA] SW registrado", reg.scope);
           
           // Verifica atualizações
@@ -3539,5 +3562,5 @@ function testarNotificacaoAgoraOLD(){
       }
     })();
   </script>
-</body>
+<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a4b88c589fd9f254',t:'MTc5MjE2OTI3Ng=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
