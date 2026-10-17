@@ -115,8 +115,10 @@ jobs:
           function tokensAndroid(fcmTokens){
             const vistos = new Set();
             return Object.entries(fcmTokens||{})
-              .map(([chave,v]) => typeof v==='string' ? {token:v, plataforma:'pc', chave} : Object.assign({}, v, {chave}))
+              .map(([chave,v]) => typeof v==='string' ? {token:v, plataforma:'pc', criadoEm:'', chave} : Object.assign({}, v, {chave}))
               .filter(t => t && t.token)
+              // mais recentes primeiro: o representante de cada grupo passa a ser o token NOVO
+              .sort((a,b)=> String(b.criadoEm||'').localeCompare(String(a.criadoEm||'')))
               .filter(t => {
                 const g = `${t.plataforma||'pc'}|${t.userAgent||t.token}`;
                 if(vistos.has(g)) return false;
@@ -181,6 +183,7 @@ jobs:
                 // Push data-only: o APK e o SW montam a notificacao no canal certo
                 const entradas = tokensAndroid(u.fcmTokens);
                 const tokens = entradas.map(t=>t.token);
+                entradas.forEach(t=>console.log(`    alvo push: ...${String(t.token).slice(-8)} (${t.plataforma||'pc'} / ${t.cliente||'-'} / ${t.criadoEm||'sem data'})`));
                 if(cfg.pushAtivo !== false && tokens.length){
                   try{
                     const corpo = texto.split('\n').slice(2,6).join('\n').slice(0,220);
