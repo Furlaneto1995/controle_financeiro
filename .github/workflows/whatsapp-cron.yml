@@ -114,8 +114,8 @@ jobs:
 
           function tokensAndroid(fcmTokens){
             const vistos = new Set();
-            return Object.values(fcmTokens||{})
-              .map(v => typeof v==='string' ? {token:v, plataforma:'pc', criadoEm:''} : v)
+            return Object.entries(fcmTokens||{})
+              .map(([chave,v]) => typeof v==='string' ? {token:v, plataforma:'pc', chave} : Object.assign({}, v, {chave}))
               .filter(t => t && t.token)
               .filter(t => {
                 const g = `${t.plataforma||'pc'}|${t.userAgent||t.token}`;
@@ -178,18 +178,32 @@ jobs:
                   console.log(`  WhatsApp desativado ou sem telefone/apikey`);
                 }
 
-                // Push (se houver token)
-                const tokens = tokensAndroid(u.fcmTokens).map(t=>t.token);
+                // Push data-only: o APK e o SW montam a notificacao no canal certo
+                const entradas = tokensAndroid(u.fcmTokens);
+                const tokens = entradas.map(t=>t.token);
                 if(cfg.pushAtivo !== false && tokens.length){
                   try{
+                    const corpo = texto.split('\n').slice(2,6).join('\n').slice(0,220);
                     const r = await messaging.sendEachForMulticast({
                       tokens,
-                      notification: { title: 'Controle Financeiro - Vencimentos', body: texto.split('\n').slice(2,5).join('\n').slice(0,180) },
-                      data: { url: 'https://furlaneto1995.github.io/controle_financeiro/' }
+                      data: { title: 'Controle Financeiro - Vencimentos', body: corpo, url: 'https://furlaneto1995.github.io/controle_financeiro/' }
                     });
                     console.log(`  Push: ${r.successCount} ok, ${r.failureCount} falha`);
+                    for(let i=0;i<r.responses.length;i++){
+                      const resp = r.responses[i];
+                      if(!resp.success){
+                        const cod = (resp.error && resp.error.code) ? String(resp.error.code).split('/').pop() : 'erro';
+                        console.log(`    token ...${String(tokens[i]).slice(-8)}: FALHOU (${cod})`);
+                        if(/registration-token-not-registered|invalid-registration-token|sender-id-mismatch/i.test(cod) && entradas[i] && entradas[i].chave){
+                          await db.ref(`usuarios/${uid}/fcmTokens/${entradas[i].chave}`).remove();
+                          console.log(`    token morto removido da lista`);
+                        }
+                      }
+                    }
                     if(r.successCount > 0) ok++;
                   }catch(e){ console.log(`  Push falhou: ${e.message}`); }
+                } else {
+                  console.log(`  Push pulado (pushAtivo=${cfg.pushAtivo}, tokens=${tokens.length})`);
                 }
 
                 if(!forcar) await jaRef.set({ enviadoEm: new Date().toISOString(), contas: venc.length });
