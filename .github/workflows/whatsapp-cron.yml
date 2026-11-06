@@ -11,13 +11,14 @@
 #     (chave de historico aviso_YYYY-MM-DD), e somente se
 #     houver contas vencendo na janela de antecedencia.
 #   - Teste manual: Actions > Run workflow > force = true.
-#   - Se o heartbeat parar, sobra o cron de seguranca as 08:00 BRT.
+#   - Se o heartbeat parar, sobram crons de seguranca as 12:00 e 20:00 BRT.
 # ============================================================
 name: Aviso diario de vencimentos
 
 on:
   schedule:
-    - cron: '0 11 * * *'
+    - cron: '0 15 * * *'   # 12:00 BRT - rede de seguranca se o heartbeat de 5 min falhar
+    - cron: '0 23 * * *'   # 20:00 BRT - segunda rede (cobre horarios config. ate 20:00)
   workflow_dispatch:
     inputs:
       force:
